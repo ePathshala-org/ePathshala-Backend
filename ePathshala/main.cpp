@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <algorithm>
 #include <drogon/drogon.h>
 #include <drogon/orm/DbClient.h>
@@ -22,24 +23,14 @@ int main()
 
         if(requestJson["type"].asString() == "init-not-logged-in")
         {
-            std::cout << "Got init request" << std::endl;
+            std::cout << "Got \"init-not-logged-in\" request" << std::endl;
 
-            std::stringstream query;
-            query <<
-                "SELECT COURSES_2.COURSE_ID AS COURSE_ID, COURSES_2.TITLE AS TITLE, COURSES_2.DESCRIPTION AS DESCRIPTION, PRICE, NUMBER_OF_ENROLLS, AVG(RATE) AS RATE\
-                FROM(\
-                    SELECT COURSES.COURSE_ID AS COURSE_ID, TITLE, DESCRIPTION, PRICE, COUNT(*) AS NUMBER_OF_ENROLLS\
-                    FROM COURSES\
-                    JOIN ENROLLED_COURSES\
-                    ON(COURSES.COURSE_ID = ENROLLED_COURSES.COURSE_ID)\
-                    GROUP BY COURSES.COURSE_ID, TITLE, DESCRIPTION, PRICE\
-                ) COURSES_2\
-                JOIN CONTENTS\
-                ON(COURSES_2.COURSE_ID = CONTENTS.COURSE_ID)\
-                GROUP BY COURSES_2.COURSE_ID, COURSES_2.TITLE, COURSES_2.DESCRIPTION, PRICE, NUMBER_OF_ENROLLS\
-                ORDER BY NUMBER_OF_ENROLLS DESC";
+            std::ifstream inputFileStream("sql/init-not-logged-in/top-courses.sql");
+            std::string query;
 
-            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query.str());
+            inputFileStream >> query;
+
+            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query);
 
             resultFuture.wait();
 
@@ -59,17 +50,14 @@ int main()
                 response["query_top_courses"].append(responseRow);
             }
 
-            query.str("");
+            query.clear();
 
-            query <<
-                "SELECT CONTENTS.CONTENT_ID AS CONTENT_ID, TITLE, DESCRIPTION, COUNT(*) AS NUMBER_OF_VIEWERS\
-                FROM CONTENTS\
-                JOIN CONTENT_VIEWERS\
-                ON(CONTENTS.CONTENT_ID = CONTENT_VIEWERS.CONTENT_ID)\
-                GROUP BY CONTENTS.CONTENT_ID, TITLE, DESCRIPTION\
-                ORDER BY NUMBER_OF_VIEWERS DESC";
+            inputFileStream.close();
+            inputFileStream.open("sql/init-not-logged-in/top-videos.sql");
 
-            resultFuture = dbClient.execSqlAsyncFuture(query.str());
+            inputFileStream >> query;
+
+            resultFuture = dbClient.execSqlAsyncFuture(query);
 
             resultFuture.wait();
 
@@ -88,6 +76,8 @@ int main()
             }
 
             response["ok"] = true;
+
+            inputFileStream.close();
         }
         else if(requestJson["type"].asString() == "login")
         {
@@ -95,13 +85,12 @@ int main()
             {
                 std::cout << "Got student login request" << std::endl;
 
-                std::string query = "SELECT STUDENTS.USER_ID AS USER_ID\
-                FROM STUDENTS\
-                JOIN USERS\
-                ON(STUDENTS.USER_ID = USERS.USER_ID)\
-                WHERE EMAIL = \'" + requestJson["email"].asString() + "\'";
+                std::ifstream inputFileStream("sql/login/student/check-email.sql");
+                std::string query;
 
-                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query);
+                inputFileStream >> query;
+
+                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query, requestJson["email"].asString());
 
                 resultFuture.wait();
 
@@ -122,13 +111,13 @@ int main()
 
                 if(response["email_found"].as<bool>())
                 {
-                    query = "SELECT STUDENTS.USER_ID AS USER_ID, SECURITY_KEY\
-                    FROM STUDENTS\
-                    JOIN USERS\
-                    ON(STUDENTS.USER_ID = USERS.USER_ID)\
-                    WHERE EMAIL = \'" + requestJson["email"].asString() + "\' AND SECURITY_KEY = \'" + requestJson["password"].asString() + "\'";
+                    query.clear();
+                    inputFileStream.close();
+                    inputFileStream.open("sql/login/student/email-found.sql");
 
-                    resultFuture = dbClient.execSqlAsyncFuture(query);
+                    inputFileStream >> query;
+
+                    resultFuture = dbClient.execSqlAsyncFuture(query, requestJson["email"].asString(), requestJson["password"].asString());
 
                     resultFuture.wait();
 
@@ -152,18 +141,19 @@ int main()
                     response["password"] = result[0]["SECURITY_KEY"].as<Json::String>();
                     response["account_type"] = "student";
                 }
+
+                inputFileStream.close();
             }
             else
             {
                 std::cout << "Got teacher login request" << std::endl;
 
-                std::string query = "SELECT TEACHERS.USER_ID AS USER_ID\
-                    FROM TEACHERS\
-                    JOIN USERS\
-                    ON(TEACHERS.USER_ID = USERS.USER_ID)\
-                    WHERE EMAIL = \'" + requestJson["email"].asString() + "\'";
+                std::ifstream inputFileStream("sql/login/teacher/check-email.sql");
+                std::string query;
 
-                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query);
+                inputFileStream >> query;
+
+                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query, requestJson["email"].asString());
 
                 resultFuture.wait();
 
@@ -184,13 +174,13 @@ int main()
 
                 if(response["email_found"].as<bool>())
                 {
-                    query = "SELECT TEACHERS.USER_ID AS USER_ID, SECURITY_KEY\
-                    FROM TEACHERS\
-                    JOIN USERS\
-                    ON(TEACHERS.USER_ID = USERS.USER_ID)\
-                    WHERE EMAIL = \'" + requestJson["email"].asString() + "\' AND SECURITY_KEY = \'" + requestJson["password"].asString() + "\'";
+                    query.clear();
+                    inputFileStream.close();
+                    inputFileStream.open("sql/login/teacher/email-found.sql");
 
-                    resultFuture = dbClient.execSqlAsyncFuture(query);
+                    inputFileStream >> query;
+
+                    resultFuture = dbClient.execSqlAsyncFuture(query, requestJson["email"].asString(), requestJson["password"].asString());
 
                     resultFuture.wait();
 
@@ -214,24 +204,22 @@ int main()
                     response["password"] = result[0]["SECURITY_KEY"].as<Json::String>();
                     response["account_type"] = "teacher";
                 }
+
+                inputFileStream.close();
             }
             
-
             response["ok"] = true;
         }
         else if(requestJson["type"].asString() == "get-student-details-home")
         {
             std::cout << "Get student details request" << std::endl;
 
-            std::stringstream query;
+            std::ifstream inputFileStream("sql/get-student-details-home.sql");
+            std::string query;
 
-            query << "SELECT FULL_NAME, EMAIL, BIO, RANK_POINT\
-                FROM USERS\
-                JOIN STUDENTS\
-                ON (USERS.USER_ID = STUDENTS.USER_ID)\
-                WHERE USERS.USER_ID = " << requestJson["user_id"].as<Json::Int64>() << " AND SECURITY_KEY = \'" << requestJson["password"].as<Json::String>() << "\'";
+            inputFileStream >> query;
 
-            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query.str());
+            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query, requestJson["user_id"].as<Json::Int64>(), requestJson["password"].as<Json::String>());
 
             resultFuture.wait();
 
@@ -253,25 +241,19 @@ int main()
 
                 response["ok"] = false;
             }
+
+            inputFileStream.close();
         }
         else if(requestJson["type"].asString() == "get-teacher-details-home")
         {
             std::cout << "Teacher details request" << std::endl;
 
-            std::stringstream query;
+            std::ifstream inputFileStream("sql/get-teacher-details-home.sql");
+            std::string query;
 
-            query << "SELECT FULL_NAME, EMAIL, BIO, AVG(RATE) AS RATE\
-                FROM USERS\
-                JOIN TEACHERS\
-                ON(USERS.USER_ID = TEACHERS.USER_ID)\
-                JOIN COURSES\
-                ON(TEACHERS.USER_ID = COURSES.CREATOR_ID)\
-                JOIN CONTENTS\
-                ON(COURSES.COURSE_ID = CONTENTS.COURSE_ID)\
-                WHERE USERS.USER_ID = " << requestJson["user_id"].as<Json::Int64>() << " \
-                GROUP BY FULL_NAME, EMAIL, BIO";
+            inputFileStream >> query;
 
-            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query.str());
+            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query, requestJson["user_id"].as<Json::Int64>());
 
             resultFuture.wait();
 
@@ -293,20 +275,19 @@ int main()
 
                 response["ok"] = false;
             }
+
+            inputFileStream.close();
         }
         else if(requestJson["type"].asString() == "get-teacher-courses")
         {
-            std::stringstream query;
+            std::cout << "Got \"get-teacher-courses\"" << std::endl;
 
-            query << "SELECT COURSES.COURSE_ID AS COURSE_ID, COURSES.TITLE AS TITLE, COURSES.DESCRIPTION AS DESCRIPTION, PRICE, AVG(RATE) AS RATE\
-                FROM COURSES\
-                JOIN CONTENTS\
-                ON(COURSES.COURSE_ID = CONTENTS.COURSE_ID)\
-                WHERE CREATOR_ID = " << requestJson["user_id"].as<Json::Int64>() <<
-                "GROUP BY COURSES.COURSE_ID, COURSES.TITLE, COURSES.DESCRIPTION\
-                ORDER BY RATE";
+            std::ifstream inputFileStream("sql/get-teacher-courses.sql");
+            std::string query;
 
-            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query.str());
+            inputFileStream >> query;
+
+            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query, requestJson["user_id"].as<Json::Int64>());
 
             resultFuture.wait();
 
@@ -328,6 +309,8 @@ int main()
             }
 
             response["ok"] = true;
+
+            inputFileStream.close();
         }
         else if(requestJson["type"].asString() == "search")
         {
@@ -337,19 +320,14 @@ int main()
             {
                 std::cout << "Courses search request" << std::endl;
 
+                std::ifstream inputFileStream("sql/search/courses/courses-search-result.sql");
                 std::string searchQuery = requestJson["search_query"].asString();
-                std::stringstream query;
+                std::string query;
                 long page = requestJson["page"].as<Json::Int64>();
 
-                query <<
-                    "SELECT COURSES.COURSE_ID AS COURSE_ID, COURSES.TITLE AS TITLE, COURSES.DESCRIPTION AS DESCRIPTION, PRICE, AVG(RATE) AS RATE\
-                    FROM COURSES\
-                    JOIN CONTENTS\
-                    ON(COURSES.COURSE_ID = CONTENTS.COURSE_ID)\
-                    WHERE LOWER(COURSES.TITLE) LIKE LOWER(\'%" << searchQuery << "%\')\
-                    GROUP BY COURSES.COURSE_ID, COURSES.TITLE, COURSES.DESCRIPTION, PRICE";
+                inputFileStream >> query;
 
-                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query.str());
+                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query, searchQuery);
 
                 resultFuture.wait();
 
@@ -383,23 +361,21 @@ int main()
                 }
 
                 response["ok"] = true;
+
+                inputFileStream.close();
             }
             else if(requestJson["search_type"].asString() == "videos")
             {
                 std::cout << "Videos search request" << std::endl;
 
+                std::ifstream inputFileStream("sql/search/videos/search-result.sql");
                 std::string searchQuery = requestJson["search_query"].asString();
                 long page = requestJson["page"].as<Json::Int64>();
-                std::stringstream query;
+                std::string query;
 
-                query <<
-                    "SELECT CONTENT_ID, CONTENTS.TITLE AS CONTENT_TITLE, CONTENTS.DESCRIPTION AS DESCRIPTION, RATE, CONTENTS.COURSE_ID AS COURSE_ID, COURSES.TITLE AS COURSE_TITLE\
-                    FROM CONTENTS\
-                    JOIN COURSES\
-                    ON(CONTENTS.COURSE_ID = COURSES.COURSE_ID)\
-                    WHERE LOWER(CONTENTS.TITLE) LIKE LOWER(\'%" << searchQuery << "%\') AND CONTENT_TYPE = \'VIDEOS\'";
+                inputFileStream >> query;
 
-                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query.str());
+                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query, searchQuery);
 
                 resultFuture.wait();
 
@@ -434,23 +410,21 @@ int main()
                 }
 
                 response["ok"] = true;
+
+                inputFileStream.close();
             }
             else if(requestJson["search_type"].asString() == "pages")
             {
                 std::cout << "Pages search request" << std::endl;
 
+                std::ifstream inputFileStream("sql/search/pages/search-result.sql");
                 std::string searchQuery = requestJson["search_query"].asString();
                 long page = requestJson["page"].as<Json::Int64>();
-                std::stringstream query;
+                std::string query;
 
-                query <<
-                    "SELECT CONTENT_ID, CONTENTS.TITLE AS CONTENT_TITLE, CONTENTS.DESCRIPTION AS DESCRIPTION, RATE, CONTENTS.COURSE_ID AS COURSE_ID, COURSES.TITLE AS COURSE_TITLE\
-                    FROM CONTENTS\
-                    JOIN COURSES\
-                    ON(CONTENTS.COURSE_ID = COURSES.COURSE_ID)\
-                    WHERE LOWER(CONTENTS.TITLE) LIKE LOWER(\'%" << searchQuery << "%\') AND CONTENT_TYPE = \'PAGE\'";
+                inputFileStream >> query;
 
-                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query.str());
+                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query, searchQuery);
 
                 resultFuture.wait();
 
@@ -485,23 +459,21 @@ int main()
                 }
 
                 response["ok"] = true;
+
+                inputFileStream.close();
             }
             else if(requestJson["search_type"].asString() == "quizes")
             {
                 std::cout << "Quizes search request" << std::endl;
 
+                std::ifstream inputFileStream("sql/search/search-result.sql");
                 std::string searchQuery = requestJson["search_query"].asString();
                 long page = requestJson["page"].as<Json::Int64>();
-                std::stringstream query;
+                std::string query;
 
-                query <<
-                    "SELECT CONTENT_ID, CONTENTS.TITLE AS CONTENT_TITLE, CONTENTS.DESCRIPTION AS DESCRIPTION, RATE, CONTENTS.COURSE_ID AS COURSE_ID, COURSES.TITLE AS COURSE_TITLE\
-                    FROM CONTENTS\
-                    JOIN COURSES\
-                    ON(CONTENTS.COURSE_ID = COURSES.COURSE_ID)\
-                    WHERE LOWER(CONTENTS.TITLE) LIKE LOWER(\'%" << searchQuery << "%\') AND CONTENT_TYPE = \'QUIZ\'";
+                inputFileStream >> query;
 
-                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query.str());
+                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query, searchQuery);
 
                 resultFuture.wait();
 
@@ -536,23 +508,21 @@ int main()
                 }
 
                 response["ok"] = true;
+
+                inputFileStream.close();
             }
             else if(requestJson["search_type"].asString() == "students")
             {
                 std::cout << "Students search request" << std::endl;
 
+                std::ifstream inputFileStream("sql/search/students/search-result.sql");
                 std::string searchQuery = requestJson["search_query"].asString();
                 long page = requestJson["page"].as<Json::Int64>();
-                std::stringstream query;
+                std::string query;
 
-                query <<
-                    "SELECT STUDENTS.USER_ID AS USER_ID, FULL_NAME, RANK_POINT\
-                    FROM STUDENTS\
-                    JOIN USERS\
-                    ON(USERS.USER_ID = STUDENTS.USER_ID)\
-                    WHERE LOWER(FULL_NAME) LIKE LOWER(\'%" << searchQuery << "%\')";
+                inputFileStream >> query;
 
-                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query.str());
+                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query, searchQuery);
 
                 resultFuture.wait();
 
@@ -584,28 +554,21 @@ int main()
                 }
 
                 response["ok"] = true;
+
+                inputFileStream.close();
             }
             else if(requestJson["search_type"].asString() == "teachers")
             {
                 std::cout << "Teachers search request" << std::endl;
 
+                std::ifstream inputFileStream("sql/teachers/search-result.sql");
                 std::string searchQuery = requestJson["search_query"].asString();
                 long page = requestJson["page"].as<Json::Int64>();
-                std::stringstream query;
+                std::string query;
 
-                query <<
-                    "SELECT TEACHERS.USER_ID AS USER_ID, FULL_NAME, AVG(RATE) AS RATE\
-                    FROM TEACHERS\
-                    JOIN USERS\
-                    ON(USERS.USER_ID = TEACHERS.USER_ID)\
-                    JOIN COURSES\
-                    ON(TEACHERS.USER_ID = COURSES.CREATOR_ID)\
-                    JOIN CONTENTS\
-                    ON(COURSES.COURSE_ID = CONTENTS.COURSE_ID)\
-                    WHERE LOWER(FULL_NAME) LIKE LOWER(\'%" << searchQuery << "%\')\
-                    GROUP BY TEACHERS.USER_ID, FULL_NAME";
+                inputFileStream >> query;
 
-                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query.str());
+                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query, searchQuery);
 
                 resultFuture.wait();
 
@@ -637,30 +600,18 @@ int main()
                 }
 
                 response["ok"] = true;
+
+                inputFileStream.close();
             }
         }
         else if(requestJson["type"].asString() == "get-student-courses")
         {
             std::cout << "Got students courses request" << std::endl;
 
-            std::stringstream query;
+            std::ifstream inputFileStream("get-student-courses.sql");
+            std::string query;
 
-            query <<
-                "SELECT COURSES_2.COURSE_ID AS COURSE_ID, COURSES_2.TITLE AS TITLE, COURSES_2.DESCRIPTION AS DESCRIPTION, PRICE, NUMBER_OF_ENROLLS, AVG(RATE) AS RATE\
-                    FROM(\
-                        SELECT COURSES.COURSE_ID AS COURSE_ID, TITLE, DESCRIPTION, PRICE, COUNT(*) AS NUMBER_OF_ENROLLS\
-                        FROM COURSES\
-                        JOIN ENROLLED_COURSES\
-                        ON(COURSES.COURSE_ID = ENROLLED_COURSES.COURSE_ID)\
-                        WHERE ENROLLED_COURSES.USER_ID = " << requestJson["user_id"].as<Json::Int64>() <<
-                        "GROUP BY COURSES.COURSE_ID, TITLE, DESCRIPTION, PRICE\
-                    ) COURSES_2\
-                    JOIN CONTENTS\
-                    ON(COURSES_2.COURSE_ID = CONTENTS.COURSE_ID)\
-                    GROUP BY COURSES_2.COURSE_ID, COURSES_2.TITLE, COURSES_2.DESCRIPTION, PRICE, NUMBER_OF_ENROLLS\
-                    ORDER BY NUMBER_OF_ENROLLS DESC, RATE DESC";
-
-            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query.str());
+            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query, requestJson["user_id"].as<Json::Int64>());
 
             resultFuture.wait();
 
@@ -683,26 +634,15 @@ int main()
             }
 
             response["ok"] = true;
+
+            inputFileStream.close();
         }
         else if(requestJson["type"].asString() == "get-student-all-courses")
         {
-            std::stringstream query;
+            std::ifstream inputFileStream("sql/get-student-all-courses.sql");
+            std::string query;
 
-            query <<
-                "SELECT COURSES_2.COURSE_ID AS COURSE_ID, COURSES_2.TITLE AS TITLE, COURSES_2.DESCRIPTION AS DESCRIPTION, PRICE, NUMBER_OF_ENROLLS, AVG(RATE) AS RATE\
-                    FROM(\
-                        SELECT COURSES.COURSE_ID AS COURSE_ID, TITLE, DESCRIPTION, PRICE, COUNT(*) AS NUMBER_OF_ENROLLS\
-                        FROM COURSES\
-                        JOIN ENROLLED_COURSES\
-                        ON(COURSES.COURSE_ID = ENROLLED_COURSES.COURSE_ID)\
-                        GROUP BY COURSES.COURSE_ID, TITLE, DESCRIPTION, PRICE\
-                    ) COURSES_2\
-                    JOIN CONTENTS\
-                    ON(COURSES_2.COURSE_ID = CONTENTS.COURSE_ID)\
-                    GROUP BY COURSES_2.COURSE_ID, COURSES_2.TITLE, COURSES_2.DESCRIPTION, PRICE, NUMBER_OF_ENROLLS\
-                    ORDER BY NUMBER_OF_ENROLLS DESC, RATE DESC";
-
-            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query.str());
+            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query);
 
             resultFuture.wait();
 
@@ -725,6 +665,8 @@ int main()
             }
 
             response["ok"] = true;
+
+            inputFileStream.close();
         }
         else if(requestJson["type"].asString() == "get-all-courses")
         {
