@@ -23,18 +23,20 @@ int main()
 
         if(requestJson["type"].asString() == "init-not-logged-in")
         {
-            std::cout << "Got \"init-not-logged-in\" request" << std::endl;
+            std::clog << "Got \"init-not-logged-in\" request" << std::endl;
 
             std::ifstream inputFileStream("sql/init-not-logged-in/top-courses.sql");
-            std::string query;
+            std::stringstream queryStream;
 
-            inputFileStream >> query;
+            queryStream << inputFileStream.rdbuf();
 
-            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query);
+            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str());
 
             resultFuture.wait();
 
             drogon::orm::Result result = resultFuture.get();
+
+            std::clog << "Prepared top-courses" << std::endl;
 
             for(long i = 0; i < result.size() && i < 5; ++i)
             {
@@ -50,14 +52,13 @@ int main()
                 response["query_top_courses"].append(responseRow);
             }
 
-            query.clear();
-
+            queryStream.str("");
             inputFileStream.close();
             inputFileStream.open("sql/init-not-logged-in/top-videos.sql");
 
-            inputFileStream >> query;
+            queryStream << inputFileStream.rdbuf();
 
-            resultFuture = dbClient.execSqlAsyncFuture(query);
+            resultFuture = dbClient.execSqlAsyncFuture(queryStream.str());
 
             resultFuture.wait();
 
@@ -83,14 +84,14 @@ int main()
         {
             if(requestJson["account_type"].as<Json::String>() == "student")
             {
-                std::cout << "Got student login request" << std::endl;
+                std::clog << "Got \"login student\" request" << std::endl;
 
                 std::ifstream inputFileStream("sql/login/student/check-email.sql");
-                std::string query;
+                std::stringstream queryStream;
 
-                inputFileStream >> query;
+                queryStream << inputFileStream.rdbuf();
 
-                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query, requestJson["email"].asString());
+                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), requestJson["email"].asString());
 
                 resultFuture.wait();
 
@@ -98,26 +99,26 @@ int main()
 
                 if(result.size() > 0)
                 {
-                    std::cout << "Email found" << std::endl;
+                    std::clog << "Email found" << std::endl;
 
                     response["email_found"] = true;
                 }
                 else
                 {
-                    std::cout << "Login not accepted" << std::endl;
+                    std::clog << "Login not accepted" << std::endl;
 
                     response["email_found"] = false;
                 }
 
                 if(response["email_found"].as<bool>())
                 {
-                    query.clear();
+                    queryStream.str("");
                     inputFileStream.close();
                     inputFileStream.open("sql/login/student/email-found.sql");
 
-                    inputFileStream >> query;
+                    queryStream << inputFileStream.rdbuf();
 
-                    resultFuture = dbClient.execSqlAsyncFuture(query, requestJson["email"].asString(), requestJson["password"].asString());
+                    resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), requestJson["email"].asString(), requestJson["password"].asString());
 
                     resultFuture.wait();
 
@@ -125,7 +126,7 @@ int main()
 
                     if(result.size() > 0)
                     {
-                        std::cout << "Password matched" << std::endl;
+                        std::clog << "Password matched" << std::endl;
 
                         response["password_matched"] = true;
                     }
@@ -146,14 +147,14 @@ int main()
             }
             else
             {
-                std::cout << "Got teacher login request" << std::endl;
+                std::clog << "Got \"login teacher\" request" << std::endl;
 
                 std::ifstream inputFileStream("sql/login/teacher/check-email.sql");
-                std::string query;
+                std::stringstream queryStream;
 
-                inputFileStream >> query;
+                queryStream << inputFileStream.rdbuf();
 
-                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query, requestJson["email"].asString());
+                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), requestJson["email"].asString());
 
                 resultFuture.wait();
 
@@ -161,26 +162,26 @@ int main()
 
                 if(result.size() > 0)
                 {
-                    std::cout << "Email found" << std::endl;
+                    std::clog << "Email found" << std::endl;
 
                     response["email_found"] = true;
                 }
                 else
                 {
-                    std::cout << "Login not accepted" << std::endl;
+                    std::clog << "Login not accepted" << std::endl;
 
                     response["email_found"] = false;
                 }
 
                 if(response["email_found"].as<bool>())
                 {
-                    query.clear();
+                    queryStream.str("");
                     inputFileStream.close();
                     inputFileStream.open("sql/login/teacher/email-found.sql");
 
-                    inputFileStream >> query;
+                    queryStream << inputFileStream.rdbuf();
 
-                    resultFuture = dbClient.execSqlAsyncFuture(query, requestJson["email"].asString(), requestJson["password"].asString());
+                    resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), requestJson["email"].asString(), requestJson["password"].asString());
 
                     resultFuture.wait();
 
@@ -188,7 +189,7 @@ int main()
 
                     if(result.size() > 0)
                     {
-                        std::cout << "Password matched" << std::endl;
+                        std::clog << "Password matched" << std::endl;
 
                         response["password_matched"] = true;
                     }
@@ -212,14 +213,14 @@ int main()
         }
         else if(requestJson["type"].asString() == "get-student-details-home")
         {
-            std::cout << "Get student details request" << std::endl;
+            std::clog << "Get \"student-details-home\" request" << std::endl;
 
             std::ifstream inputFileStream("sql/get-student-details-home.sql");
-            std::string query;
+            std::stringstream queryStream;
 
-            inputFileStream >> query;
+            queryStream << inputFileStream.rdbuf();
 
-            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query, requestJson["user_id"].as<Json::Int64>(), requestJson["password"].as<Json::String>());
+            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), requestJson["user_id"].as<Json::Int64>(), requestJson["password"].as<Json::String>());
 
             resultFuture.wait();
 
@@ -227,7 +228,7 @@ int main()
 
             if(result.size())
             {
-                std::cout << "Making response" << std::endl;
+                std::clog << "Making response" << std::endl;
 
                 response["ok"] = true;
                 response["full_name"] = result[0]["FULL_NAME"].as<Json::String>();
@@ -237,7 +238,7 @@ int main()
             }
             else
             {
-                std::cout << "No such user id, could not make response" << std::endl;
+                std::clog << "No such user id, could not make response" << std::endl;
 
                 response["ok"] = false;
             }
@@ -246,14 +247,14 @@ int main()
         }
         else if(requestJson["type"].asString() == "get-teacher-details-home")
         {
-            std::cout << "Teacher details request" << std::endl;
+            std::clog << "Get \"teacher-details-home\" request" << std::endl;
 
             std::ifstream inputFileStream("sql/get-teacher-details-home.sql");
-            std::string query;
+            std::stringstream queryStream;
 
-            inputFileStream >> query;
+            queryStream << inputFileStream.rdbuf();
 
-            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query, requestJson["user_id"].as<Json::Int64>());
+            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), requestJson["user_id"].as<Json::Int64>());
 
             resultFuture.wait();
 
@@ -261,7 +262,7 @@ int main()
 
             if(result.size())
             {
-                std::cout << "Making response" << std::endl;
+                std::clog << "Making response" << std::endl;
 
                 response["ok"] = true;
                 response["full_name"] = result[0]["FULL_NAME"].as<Json::String>();
@@ -271,7 +272,7 @@ int main()
             }
             else
             {
-                std::cout << "No such user id, could not make response" << std::endl;
+                std::clog << "No such user id, could not make response" << std::endl;
 
                 response["ok"] = false;
             }
@@ -280,20 +281,20 @@ int main()
         }
         else if(requestJson["type"].asString() == "get-teacher-courses")
         {
-            std::cout << "Got \"get-teacher-courses\"" << std::endl;
+            std::clog << "Got \"teacher-courses\"" << std::endl;
 
             std::ifstream inputFileStream("sql/get-teacher-courses.sql");
-            std::string query;
+            std::stringstream queryStream;
 
-            inputFileStream >> query;
+            queryStream << inputFileStream.rdbuf();
 
-            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query, requestJson["user_id"].as<Json::Int64>());
+            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), requestJson["user_id"].as<Json::Int64>());
 
             resultFuture.wait();
 
             drogon::orm::Result result = resultFuture.get();
 
-            std::cout << "Making response" << std::endl;
+            std::clog << "Making response" << std::endl;
 
             for(long i = 0; i < result.size() && i < 5; ++i)
             {
@@ -314,20 +315,20 @@ int main()
         }
         else if(requestJson["type"].asString() == "search")
         {
-            std::cout << "Search request" << std::endl;
+            std::clog << "Search request" << std::endl;
 
             if(requestJson["search_type"].asString() == "courses")
             {
-                std::cout << "Courses search request" << std::endl;
+                std::clog << "Courses search request" << std::endl;
 
-                std::ifstream inputFileStream("sql/search/courses/courses-search-result.sql");
+                std::ifstream inputFileStream("sql/search/courses/search-result.sql");
                 std::string searchQuery = requestJson["search_query"].asString();
-                std::string query;
+                std::stringstream queryStream;
                 long page = requestJson["page"].as<Json::Int64>();
 
-                inputFileStream >> query;
+                queryStream << inputFileStream.rdbuf();
 
-                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query, searchQuery);
+                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), searchQuery);
 
                 resultFuture.wait();
 
@@ -339,7 +340,6 @@ int main()
 
                 if(result.size() > 0)
                 {
-
                     response["max_page_count"] = (result.size() - 1) / 5 + 1;
                     page = (page < response["max_page_count"].as<Json::Int64>() ? page : response["max_page_count"].as<Json::Int64>());
                     page = (page > 0) ? page : 0;
@@ -366,16 +366,16 @@ int main()
             }
             else if(requestJson["search_type"].asString() == "videos")
             {
-                std::cout << "Videos search request" << std::endl;
+                std::clog << "Videos search request" << std::endl;
 
                 std::ifstream inputFileStream("sql/search/videos/search-result.sql");
                 std::string searchQuery = requestJson["search_query"].asString();
                 long page = requestJson["page"].as<Json::Int64>();
-                std::string query;
+                std::stringstream queryStream;
 
-                inputFileStream >> query;
+                queryStream << inputFileStream.rdbuf();
 
-                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query, searchQuery);
+                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), searchQuery);
 
                 resultFuture.wait();
 
@@ -387,7 +387,6 @@ int main()
 
                 if(result.size() > 0)
                 {
-
                     response["max_page_count"] = (result.size() - 1) / 5 + 1;
                     page = (page < response["max_page_count"].as<Json::Int64>() ? page : response["max_page_count"].as<Json::Int64>());
                     page = (page > 0) ? page : 0;
@@ -415,16 +414,16 @@ int main()
             }
             else if(requestJson["search_type"].asString() == "pages")
             {
-                std::cout << "Pages search request" << std::endl;
+                std::clog << "Pages search request" << std::endl;
 
                 std::ifstream inputFileStream("sql/search/pages/search-result.sql");
                 std::string searchQuery = requestJson["search_query"].asString();
                 long page = requestJson["page"].as<Json::Int64>();
-                std::string query;
+                std::stringstream queryStream;
 
-                inputFileStream >> query;
+                queryStream << inputFileStream.rdbuf();
 
-                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query, searchQuery);
+                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), searchQuery);
 
                 resultFuture.wait();
 
@@ -436,7 +435,6 @@ int main()
 
                 if(result.size() > 0)
                 {
-
                     response["max_page_count"] = (result.size() - 1) / 5 + 1;
                     page = (page < response["max_page_count"].as<Json::Int64>() ? page : response["max_page_count"].as<Json::Int64>());
                     page = (page > 0) ? page : 0;
@@ -464,16 +462,16 @@ int main()
             }
             else if(requestJson["search_type"].asString() == "quizes")
             {
-                std::cout << "Quizes search request" << std::endl;
+                std::clog << "Quizes search request" << std::endl;
 
                 std::ifstream inputFileStream("sql/search/search-result.sql");
                 std::string searchQuery = requestJson["search_query"].asString();
                 long page = requestJson["page"].as<Json::Int64>();
-                std::string query;
+                std::stringstream queryStream;
 
-                inputFileStream >> query;
+                queryStream << inputFileStream.rdbuf();
 
-                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query, searchQuery);
+                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), searchQuery);
 
                 resultFuture.wait();
 
@@ -513,16 +511,16 @@ int main()
             }
             else if(requestJson["search_type"].asString() == "students")
             {
-                std::cout << "Students search request" << std::endl;
+                std::clog << "Students search request" << std::endl;
 
                 std::ifstream inputFileStream("sql/search/students/search-result.sql");
                 std::string searchQuery = requestJson["search_query"].asString();
                 long page = requestJson["page"].as<Json::Int64>();
-                std::string query;
+                std::stringstream queryStream;
 
-                inputFileStream >> query;
+                queryStream << inputFileStream.rdbuf();
 
-                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query, searchQuery);
+                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), searchQuery);
 
                 resultFuture.wait();
 
@@ -534,7 +532,6 @@ int main()
 
                 if(result.size() > 0)
                 {
-
                     response["max_page_count"] = (result.size() - 1) / 5 + 1;
                     page = (page < response["max_page_count"].as<Json::Int64>() ? page : response["max_page_count"].as<Json::Int64>());
                     page = (page > 0) ? page : 0;
@@ -559,16 +556,16 @@ int main()
             }
             else if(requestJson["search_type"].asString() == "teachers")
             {
-                std::cout << "Teachers search request" << std::endl;
+                std::clog << "Teachers search request" << std::endl;
 
                 std::ifstream inputFileStream("sql/teachers/search-result.sql");
                 std::string searchQuery = requestJson["search_query"].asString();
                 long page = requestJson["page"].as<Json::Int64>();
-                std::string query;
+                std::stringstream queryStream;
 
-                inputFileStream >> query;
+                queryStream << inputFileStream.rdbuf();
 
-                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query, searchQuery);
+                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), searchQuery);
 
                 resultFuture.wait();
 
@@ -580,7 +577,6 @@ int main()
 
                 if(result.size() > 0)
                 {
-
                     response["max_page_count"] = (result.size() - 1) / 5 + 1;
                     page = (page < response["max_page_count"].as<Json::Int64>() ? page : response["max_page_count"].as<Json::Int64>());
                     page = (page > 0) ? page : 0;
@@ -606,18 +602,20 @@ int main()
         }
         else if(requestJson["type"].asString() == "get-student-courses")
         {
-            std::cout << "Got students courses request" << std::endl;
+            std::clog << "Got students courses request" << std::endl;
 
             std::ifstream inputFileStream("get-student-courses.sql");
-            std::string query;
+            std::stringstream queryStream;
 
-            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query, requestJson["user_id"].as<Json::Int64>());
+            queryStream << inputFileStream.rdbuf();
+
+            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), requestJson["user_id"].as<Json::Int64>());
 
             resultFuture.wait();
 
             drogon::orm::Result result = resultFuture.get();
 
-            std::cout << "Making response" << std::endl;
+            std::clog << "Making response" << std::endl;
 
             for(long i = 0; i < result.size() && i < 5; ++i)
             {
@@ -639,16 +637,20 @@ int main()
         }
         else if(requestJson["type"].asString() == "get-student-all-courses")
         {
-            std::ifstream inputFileStream("sql/get-student-all-courses.sql");
-            std::string query;
+            std::clog << "Get \"student-all-courses\" request" << std::endl;
 
-            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(query);
+            std::ifstream inputFileStream("sql/get-student-all-courses.sql");
+            std::stringstream queryStream;
+
+            queryStream << inputFileStream.rdbuf();
+
+            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str());
 
             resultFuture.wait();
 
             drogon::orm::Result result = resultFuture.get();
 
-            std::cout << "Making response" << std::endl;
+            std::clog << "Making response" << std::endl;
 
             for(long i = 0; i < result.size(); ++i)
             {
@@ -668,12 +670,8 @@ int main()
 
             inputFileStream.close();
         }
-        else if(requestJson["type"].asString() == "get-all-courses")
-        {
-            
-        }
 
-        std::cout << "Sending response" << std::endl;
+        std::clog << "Sending response" << std::endl;
 
         drogon::HttpResponsePtr httpResponsePtr = drogon::HttpResponse::newHttpJsonResponse(response);
         callback(httpResponsePtr);
