@@ -7,9 +7,6 @@ add_executable(ePathshala
     src/SetupDbClientPtr.cpp)
 
 find_package(Drogon REQUIRED)
-find_package(Trantor REQUIRED)
-find_package(ZLIB REQUIRED)
-find_package(OpenSSL REQUIRED)
 target_link_libraries(ePathshala Drogon::Drogon)
 
 file(COPY ${CMAKE_SOURCE_DIR}/sql DESTINATION ${CMAKE_BINARY_DIR})

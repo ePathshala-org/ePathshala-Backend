@@ -30,7 +30,7 @@ int main()
         {
             std::clog << "Got \"init-not-logged-in\" request" << std::endl;
 
-            std::ifstream inputFileStream("sql/init-not-logged-in/top-courses.sql");
+            std::ifstream inputFileStream("../sql/init-not-logged-in/top-courses.sql");
             std::stringstream queryStream;
 
             queryStream << inputFileStream.rdbuf();
@@ -59,7 +59,7 @@ int main()
 
             queryStream.str("");
             inputFileStream.close();
-            inputFileStream.open("sql/init-not-logged-in/top-videos.sql");
+            inputFileStream.open("../sql/init-not-logged-in/top-videos.sql");
 
             queryStream << inputFileStream.rdbuf();
 
@@ -91,7 +91,7 @@ int main()
             {
                 std::clog << "Got \"login student\" request" << std::endl;
 
-                std::ifstream inputFileStream("sql/login/student/check-email.sql");
+                std::ifstream inputFileStream("../sql/login/student/check-email.sql");
                 std::stringstream queryStream;
 
                 queryStream << inputFileStream.rdbuf();
@@ -119,7 +119,7 @@ int main()
                 {
                     queryStream.str("");
                     inputFileStream.close();
-                    inputFileStream.open("sql/login/student/email-found.sql");
+                    inputFileStream.open("../sql/login/student/email-found.sql");
 
                     queryStream << inputFileStream.rdbuf();
 
@@ -154,7 +154,7 @@ int main()
             {
                 std::clog << "Got \"login teacher\" request" << std::endl;
 
-                std::ifstream inputFileStream("sql/login/teacher/check-email.sql");
+                std::ifstream inputFileStream("../sql/login/teacher/check-email.sql");
                 std::stringstream queryStream;
 
                 queryStream << inputFileStream.rdbuf();
@@ -182,7 +182,7 @@ int main()
                 {
                     queryStream.str("");
                     inputFileStream.close();
-                    inputFileStream.open("sql/login/teacher/email-found.sql");
+                    inputFileStream.open("../sql/login/teacher/email-found.sql");
 
                     queryStream << inputFileStream.rdbuf();
 
@@ -220,7 +220,7 @@ int main()
         {
             std::clog << "Get \"student-details-home\" request" << std::endl;
 
-            std::ifstream inputFileStream("sql/get-student-details-home.sql");
+            std::ifstream inputFileStream("../sql/get-student-details-home.sql");
             std::stringstream queryStream;
 
             queryStream << inputFileStream.rdbuf();
@@ -254,7 +254,7 @@ int main()
         {
             std::clog << "Get \"teacher-details-home\" request" << std::endl;
 
-            std::ifstream inputFileStream("sql/get-teacher-details-home.sql");
+            std::ifstream inputFileStream("../sql/get-teacher-details-home.sql");
             std::stringstream queryStream;
 
             queryStream << inputFileStream.rdbuf();
@@ -288,7 +288,7 @@ int main()
         {
             std::clog << "Got \"teacher-courses\"" << std::endl;
 
-            std::ifstream inputFileStream("sql/get-teacher-courses.sql");
+            std::ifstream inputFileStream("../sql/get-teacher-courses.sql");
             std::stringstream queryStream;
 
             queryStream << inputFileStream.rdbuf();
@@ -326,7 +326,7 @@ int main()
             {
                 std::clog << "Courses search request" << std::endl;
 
-                std::ifstream inputFileStream("sql/search/courses/search-result.sql");
+                std::ifstream inputFileStream("../sql/search/courses/search-result.sql");
                 std::string searchQuery = requestJson["search_query"].asString();
                 std::stringstream queryStream;
                 long page = requestJson["page"].as<Json::Int64>();
@@ -373,7 +373,7 @@ int main()
             {
                 std::clog << "Videos search request" << std::endl;
 
-                std::ifstream inputFileStream("sql/search/videos/search-result.sql");
+                std::ifstream inputFileStream("../sql/search/videos/search-result.sql");
                 std::string searchQuery = requestJson["search_query"].asString();
                 long page = requestJson["page"].as<Json::Int64>();
                 std::stringstream queryStream;
@@ -421,7 +421,7 @@ int main()
             {
                 std::clog << "Pages search request" << std::endl;
 
-                std::ifstream inputFileStream("sql/search/pages/search-result.sql");
+                std::ifstream inputFileStream("../sql/search/pages/search-result.sql");
                 std::string searchQuery = requestJson["search_query"].asString();
                 long page = requestJson["page"].as<Json::Int64>();
                 std::stringstream queryStream;
@@ -469,7 +469,7 @@ int main()
             {
                 std::clog << "Quizes search request" << std::endl;
 
-                std::ifstream inputFileStream("sql/search/search-result.sql");
+                std::ifstream inputFileStream("../sql/search/search-result.sql");
                 std::string searchQuery = requestJson["search_query"].asString();
                 long page = requestJson["page"].as<Json::Int64>();
                 std::stringstream queryStream;
@@ -518,7 +518,7 @@ int main()
             {
                 std::clog << "Students search request" << std::endl;
 
-                std::ifstream inputFileStream("sql/search/students/search-result.sql");
+                std::ifstream inputFileStream("../sql/search/students/search-result.sql");
                 std::string searchQuery = requestJson["search_query"].asString();
                 long page = requestJson["page"].as<Json::Int64>();
                 std::stringstream queryStream;
@@ -563,7 +563,7 @@ int main()
             {
                 std::clog << "Teachers search request" << std::endl;
 
-                std::ifstream inputFileStream("sql/teachers/search-result.sql");
+                std::ifstream inputFileStream("../sql/teachers/search-result.sql");
                 std::string searchQuery = requestJson["search_query"].asString();
                 long page = requestJson["page"].as<Json::Int64>();
                 std::stringstream queryStream;
@@ -644,7 +644,7 @@ int main()
         {
             std::clog << "Get \"student-all-courses\" request" << std::endl;
 
-            std::ifstream inputFileStream("sql/get-student-all-courses.sql");
+            std::ifstream inputFileStream("../sql/get-student-all-courses.sql");
             std::stringstream queryStream;
 
             queryStream << inputFileStream.rdbuf();
@@ -675,8 +675,121 @@ int main()
 
             inputFileStream.close();
         }
+        else if(requestJson["type"].asString() == "create-new-account")
+        {
+            std::clog << "Get \"create-new-account\" request" << std::endl;
+
+            std::ifstream inputFileStream("../sql/create-new-account/check-email-in-users.sql");
+            std::stringstream queryStream;
+
+            queryStream << inputFileStream.rdbuf();
+
+            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), requestJson["email"].asString());
+
+            resultFuture.wait();
+
+            drogon::orm::Result result = resultFuture.get();
+
+            inputFileStream.close();
+
+            int64_t nextUserId;
+
+            if
+            (
+                result.size() > 0 && 
+                (
+                    requestJson["student"].asBool() && result[0]["USER_TYPE"].as<std::string>() == "STUDENT" ||
+                    !requestJson["student"].asBool() && result[0]["USER_TYPE"].as<std::string>() == "TEACHER"
+                )
+            )
+            {
+                nextUserId = 0;
+            }
+            else
+            {
+                std::clog << "Finding appropriate ID for new user" << std::endl;
+
+                inputFileStream.open("../sql/create-new-account/get-max-user-id.sql");
+                queryStream.str("");
+
+                queryStream << inputFileStream.rdbuf();
+
+                std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str());
+
+                resultFuture.wait();
+
+                drogon::orm::Result result = resultFuture.get();
+
+                inputFileStream.close();
+
+                if(result.size() == 0)
+                {
+                    nextUserId = 1;
+                }
+                else
+                {
+                    nextUserId = result[0]["MAX_USER_ID"].as<int64_t>() + 1;
+                }
+            }
+
+            if(nextUserId > 0)
+            {
+                std::string gender = "F";
+
+                if(requestJson["male"].asBool())
+                {
+                    gender = "M";
+                }
+
+                std::string date = requestJson["date_of_birth"]["date"].asString();
+                std::string month = requestJson["date_of_birth"]["month"].asString();
+                std::string year = requestJson["date_of_birth"]["year"].asString();
+                std::string dateOfBirth = date + "-" + month + "-" + year;
+
+                inputFileStream.open("../sql/create-new-account/create-new-account.sql");
+                queryStream.str("");
+
+                queryStream << inputFileStream.rdbuf();
+
+                std::string userType = "TEACHER";
+
+                if(requestJson["student"].asBool())
+                {
+                    userType = "STUDENT";
+                }
+
+                std::clog << "Creating new user" << std::endl;
+
+                dbClient.execSqlAsyncFuture(queryStream.str(), nextUserId, requestJson["name"].asString(), requestJson["email"].asString(), requestJson["password"].asString(), userType, gender);
+
+                response["email_exists"] = false;
+                response["user_id"] = nextUserId;
+                response["password"] = requestJson["password"].asString();
+                
+                if(userType == "STUDENT")
+                {
+                    response["account_type"] = "student";
+                }
+                else
+                {
+                    response["account_type"] = "teacher";
+                }
+            }
+            else
+            {
+                response["email_exists"] = true;
+            }
+
+            response["ok"] = true;
+        }
 
         std::clog << "Sending response" << std::endl;
+
+        Json::FastWriter responseFastWriter;
+
+        std::string responseText = responseFastWriter.write(response);
+
+        std::clog << responseText << std::endl;
 
         drogon::HttpResponsePtr httpResponsePtr = drogon::HttpResponse::newHttpJsonResponse(response);
         callback(httpResponsePtr);
