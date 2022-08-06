@@ -3,16 +3,21 @@
 #include <algorithm>
 #include <drogon/drogon.h>
 #include <drogon/orm/DbClient.h>
+#include "SetupInitData.h"
+#include "SetupDbClientPtr.h"
 
 int main()
 {
-    drogon::orm::DbClientPtr dbClientPtr = drogon::orm::DbClient::newPgClient("user=epathshala password=1234 dbname=epathshala", 1);
-    drogon::orm::DbClient &dbClient = *dbClientPtr.get();
+    Json::Value initData;
 
-	drogon::HttpAppFramework &httpAppFramework = drogon::app().addListener("127.0.0.1", 8080);
+    SetupInitData(initData);
+
+    drogon::orm::DbClientPtr dbClientPtr = GetDbClientPtr(initData);
+    drogon::orm::DbClient &dbClient = *dbClientPtr.get();
+	drogon::HttpAppFramework &httpAppFramework = drogon::app().addListener(initData["ip"].asString(), initData["port"].asInt());
 
 	httpAppFramework.setThreadNum(16);
-    httpAppFramework.setDocumentRoot("/home/siam11651/Sources/ePathshala");
+    httpAppFramework.setDocumentRoot(initData["docRoot"].asString());
 
 	httpAppFramework.registerHandler("/",
     [&dbClient](const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback)

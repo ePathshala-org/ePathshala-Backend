@@ -1,0 +1,11 @@
+{
+    "dataBaseLoginData":
+    {
+        "user": "epathshala",
+        "dbname": "epathshala",
+        "password": "1234"
+    },
+    "ip": "127.0.0.1",
+    "port": 8080,
+    "docRoot": "/home/siam11651/Sources/ePathshala"
+}
