@@ -12,7 +12,7 @@ int main()
 	drogon::HttpAppFramework &httpAppFramework = drogon::app().addListener("127.0.0.1", 8080);
 
 	httpAppFramework.setThreadNum(16);
-    httpAppFramework.setDocumentRoot("/mnt/hdd/Sources/ePathshala");
+    httpAppFramework.setDocumentRoot("/home/siam11651/Sources/ePathshala");
 
 	httpAppFramework.registerHandler("/",
     [&dbClient](const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback)
