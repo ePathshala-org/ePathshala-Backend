@@ -225,6 +225,8 @@ int main()
 
             queryStream << inputFileStream.rdbuf();
 
+            std::clog << requestJson["user_id"].as<Json::Int64>() << " " << requestJson["password"].as<Json::String>() << std::endl;
+
             std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), requestJson["user_id"].as<Json::Int64>(), requestJson["password"].as<Json::String>());
 
             resultFuture.wait();
@@ -607,9 +609,9 @@ int main()
         }
         else if(requestJson["type"].asString() == "get-student-courses")
         {
-            std::clog << "Got students courses request" << std::endl;
+            std::clog << "Got \"students-courses\" request" << std::endl;
 
-            std::ifstream inputFileStream("get-student-courses.sql");
+            std::ifstream inputFileStream("../sql/get-student-courses.sql");
             std::stringstream queryStream;
 
             queryStream << inputFileStream.rdbuf();
@@ -649,7 +651,7 @@ int main()
 
             queryStream << inputFileStream.rdbuf();
 
-            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str());
+            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), requestJson["user_id"].asInt64());
 
             resultFuture.wait();
 
@@ -761,6 +763,29 @@ int main()
                 std::clog << "Creating new user" << std::endl;
 
                 dbClient.execSqlAsyncFuture(queryStream.str(), nextUserId, requestJson["name"].asString(), requestJson["email"].asString(), requestJson["password"].asString(), userType, gender);
+                inputFileStream.close();
+                queryStream.str("");
+
+                if(userType == "STUDENT")
+                {
+                    std::clog << "Creating new student" << std::endl;
+
+                    inputFileStream.open("../sql/create-new-account/create-new-student-account.sql");
+
+                    queryStream << inputFileStream.rdbuf();
+
+                    dbClient.execSqlAsyncFuture(queryStream.str(), nextUserId);
+                }
+                else
+                {
+                    std::clog << "Creating new teacher" << std::endl;
+
+                    inputFileStream.open("../sql/create-new-account/create-new-teacher-account.sql");
+
+                    queryStream << inputFileStream.rdbuf();
+
+                    dbClient.execSqlAsyncFuture(queryStream.str(), nextUserId);
+                }
 
                 response["email_exists"] = false;
                 response["user_id"] = nextUserId;
@@ -784,12 +809,6 @@ int main()
         }
 
         std::clog << "Sending response" << std::endl;
-
-        Json::FastWriter responseFastWriter;
-
-        std::string responseText = responseFastWriter.write(response);
-
-        std::clog << responseText << std::endl;
 
         drogon::HttpResponsePtr httpResponsePtr = drogon::HttpResponse::newHttpJsonResponse(response);
         callback(httpResponsePtr);
