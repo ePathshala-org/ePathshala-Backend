@@ -14,9 +14,12 @@ add_executable(ePathshala
     "src/HandleRequests/root/InitNotLoggedIn.cpp"
     "src/HandleRequests/root/Login.cpp"
     "src/HandleRequests/root/Search.cpp"
+    "src/HandleRequests/root/GetContents.cpp"
 )
 
 find_package(Drogon REQUIRED)
 target_link_libraries(ePathshala Drogon::Drogon)
 
+file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/sql ${CMAKE_BINARY_DIR}/data)
 file(COPY ${CMAKE_SOURCE_DIR}/sql DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${CMAKE_SOURCE_DIR}/data DESTINATION ${CMAKE_BINARY_DIR})

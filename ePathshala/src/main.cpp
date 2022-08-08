@@ -65,7 +65,11 @@ int main()
         }
         else if(requestJson["type"].asString() == "get-contents")
         {
-            GetContents(requestJson, response, dbClient);
+            GetCourseContents(requestJson, response, dbClient);
+        }
+        else if(requestJson["type"].asString() == "get-student-details")
+        {
+            GetStudentDetails(requestJson, response, dbClient);
         }
 
         std::clog << "Sending response" << std::endl;

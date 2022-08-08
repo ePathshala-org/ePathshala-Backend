@@ -1,9 +1,10 @@
-#include "GetContents.h"
+#include "GetCourseContents.h"
 
-void GetContents(Json::Value &requestJson, Json::Value &response, drogon::orm::DbClient &dbClient)
+void GetCourseContents(Json::Value &requestJson, Json::Value &response, drogon::orm::DbClient &dbClient)
 {
-    std::ifstream inputFileStream("./sql/get-contents.sql");
+    std::clog << "Get \"course-contents\" request" << std::endl;
 
+    std::ifstream inputFileStream("./sql/get-contents.sql");
     std::stringstream queryStream;
 
     queryStream << inputFileStream.rdbuf();

@@ -9,4 +9,5 @@
 #include "root/GetStudentCourses.h"
 #include "root/GetStudentAllCourses.h"
 #include "root/CreateNewAccount.h"
-#include "root/GetContents.h"
+#include "root/GetCourseContents.h"
+#include "root/GetStudentDetails.h"
