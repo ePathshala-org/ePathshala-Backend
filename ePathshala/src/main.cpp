@@ -77,7 +77,7 @@ int main()
         }
         else if(requestJson["type"].asString() == "get-course-details")
         {
-            
+            GetCourseDetails(requestJson, response, dbClient);
         }
 
         std::clog << "Sending response" << std::endl;
