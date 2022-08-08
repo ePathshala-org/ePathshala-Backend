@@ -21,6 +21,7 @@ void GetStudentDetails(Json::Value &requestJson, Json::Value &response, drogon::
     response["date_of_birth"] = result[0]["DATE_OF_BIRTH"].as<Json::String>();
     response["bio"] = result[0]["BIO"].as<Json::String>();
     response["email"] = result[0]["EMAIL"].as<Json::String>();
+    response["user_type"] = result[0]["USER_TYPE"].as<Json::String>();
     response["address"] = result[0]["ADDRESS"].as<Json::String>();
     response["gender"] = result[0]["GENDER"].as<Json::String>();
     response["credit_card_id"] = result[0]["CREDIT_CARD_ID"].as<Json::Int64>();

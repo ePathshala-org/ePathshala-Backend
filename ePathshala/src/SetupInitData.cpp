@@ -2,7 +2,7 @@
 
 void SetupInitData(Json::Value &initData)
 {
-    std::ifstream initDataJsonIfstream("../data/initData.json");
+    std::ifstream initDataJsonIfstream("./data/initData.json");
 
     Json::Reader initDataJsonReader;
 

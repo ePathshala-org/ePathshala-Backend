@@ -9,9 +9,7 @@ void GetStudentDetailsHome(Json::Value &requestJson, Json::Value &response, drog
 
             queryStream << inputFileStream.rdbuf();
 
-            std::clog << requestJson["user_id"].as<Json::Int64>() << " " << requestJson["password"].as<Json::String>() << std::endl;
-
-            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), requestJson["user_id"].as<Json::Int64>(), requestJson["password"].as<Json::String>());
+            std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), requestJson["user_id"].as<Json::Int64>());
 
             resultFuture.wait();
 

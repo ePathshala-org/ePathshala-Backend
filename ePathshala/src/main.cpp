@@ -63,7 +63,6 @@ int main()
         {
             CreateNewAccount(requestJson, response, dbClient);
         }
-<<<<<<< Updated upstream
         else if(requestJson["type"].asString() == "get-contents")
         {
             GetCourseContents(requestJson, response, dbClient);
@@ -71,11 +70,14 @@ int main()
         else if(requestJson["type"].asString() == "get-student-details")
         {
             GetStudentDetails(requestJson, response, dbClient);
-=======
+        }
         else if(requestJson["type"].asString() == "get-all-courses")
         {
             GetAllCourses(requestJson, response, dbClient);
->>>>>>> Stashed changes
+        }
+        else if(requestJson["type"].asString() == "get-course-details")
+        {
+            
         }
 
         std::clog << "Sending response" << std::endl;

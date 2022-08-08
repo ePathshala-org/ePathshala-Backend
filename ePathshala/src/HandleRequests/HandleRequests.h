@@ -9,9 +9,6 @@
 #include "root/GetStudentCourses.h"
 #include "root/GetStudentAllCourses.h"
 #include "root/CreateNewAccount.h"
-<<<<<<< Updated upstream
 #include "root/GetCourseContents.h"
 #include "root/GetStudentDetails.h"
-=======
 #include "root/GetAllCourses.h"
->>>>>>> Stashed changes
