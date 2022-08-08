@@ -117,9 +117,9 @@ CREATE TABLE public.contents (
     content_id bigint NOT NULL,
     date_of_creation date,
     content_type character(10) NOT NULL,
-    rate numeric,
-    title character varying,
-    description character(100),
+    rate numeric DEFAULT 0,
+    title character varying DEFAULT ''::character varying,
+    description character(100) DEFAULT ''::bpchar,
     course_id bigint,
     CONSTRAINT contents_content_id_check CHECK ((content_id > 0)),
     CONSTRAINT contents_rate_check CHECK ((((0)::numeric <= rate) AND (rate <= (5)::numeric)))
@@ -169,9 +169,9 @@ ALTER TABLE public.course_tags OWNER TO epathshala;
 CREATE TABLE public.courses (
     course_id bigint NOT NULL,
     title character varying NOT NULL,
-    description character(100),
+    description character(100) DEFAULT ''::bpchar,
     date_of_creation date NOT NULL,
-    price integer,
+    price integer DEFAULT 0,
     creator_id bigint,
     CONSTRAINT courses_course_id_check CHECK ((course_id > 0)),
     CONSTRAINT courses_price_check CHECK ((price >= 0))
@@ -247,8 +247,8 @@ ALTER TABLE public.quiz_grades OWNER TO epathshala;
 
 CREATE TABLE public.students (
     user_id bigint NOT NULL,
-    interests character varying,
-    date_of_join date NOT NULL,
+    interests character varying DEFAULT ''::character varying,
+    date_of_join date DEFAULT CURRENT_DATE NOT NULL,
     rank_point integer DEFAULT 0,
     CONSTRAINT students_rank_point_check CHECK ((rank_point >= 0))
 );
@@ -297,8 +297,8 @@ ALTER SEQUENCE public.tags_tag_id_seq OWNED BY public.tags.tag_id;
 
 CREATE TABLE public.teachers (
     user_id bigint NOT NULL,
-    specilaity character varying,
-    date_of_join date NOT NULL
+    specilaity character varying DEFAULT ''::character varying,
+    date_of_join date DEFAULT CURRENT_DATE NOT NULL
 );
 
 
@@ -313,13 +313,13 @@ CREATE TABLE public.users (
     full_name character varying,
     security_key character(32) NOT NULL,
     date_of_birth date,
-    bio character(100),
+    bio character(100) DEFAULT ''::bpchar,
     email character varying NOT NULL,
-    address character varying,
+    address character varying DEFAULT ''::character varying,
     user_type character(10) NOT NULL,
     gender character(1),
-    credit_card_id bigint NOT NULL,
-    bank_id bigint NOT NULL,
+    credit_card_id bigint,
+    bank_id bigint,
     CONSTRAINT users_email_check CHECK (((email)::text ~~ '_%@_%.___'::text)),
     CONSTRAINT users_security_key_check CHECK ((length(security_key) >= 8)),
     CONSTRAINT users_user_id_check CHECK ((user_id > 0)),
@@ -372,24 +372,10 @@ ALTER TABLE ONLY public.contents ALTER COLUMN content_id SET DEFAULT nextval('pu
 
 
 --
--- Name: courses course_id; Type: DEFAULT; Schema: public; Owner: epathshala
---
-
-ALTER TABLE ONLY public.courses ALTER COLUMN course_id SET DEFAULT nextval('public.courses_course_id_seq'::regclass);
-
-
---
 -- Name: tags tag_id; Type: DEFAULT; Schema: public; Owner: epathshala
 --
 
 ALTER TABLE ONLY public.tags ALTER COLUMN tag_id SET DEFAULT nextval('public.tags_tag_id_seq'::regclass);
-
-
---
--- Name: users user_id; Type: DEFAULT; Schema: public; Owner: epathshala
---
-
-ALTER TABLE ONLY public.users ALTER COLUMN user_id SET DEFAULT nextval('public.users_user_id_seq'::regclass);
 
 
 --
@@ -3056,115 +3042,115 @@ COPY public.content_viewers (view_id, content_id, user_id) FROM stdin;
 --
 
 COPY public.contents (content_id, date_of_creation, content_type, rate, title, description, course_id) FROM stdin;
-74	2020-10-15	VIDEOS    	0	Transition challenge problem	\N	3
-12	2019-10-19	VIDEOS    	0	Evaluating expressions with two variables	\N	1
-14	2019-10-19	VIDEOS    	0	Evaluating expressions with two variables: fractions & decimals	\N	1
-18	2019-10-19	VIDEOS    	0	Combining like terms with negative coefficients & distribution	\N	1
-19	2019-10-19	VIDEOS    	0	Combining like terms with negative coefficients	\N	1
-58	2020-10-15	PAGE      	0	Getting ready for performing transformations	\N	3
-75	2020-10-15	PAGE      	0	Properties of translations	\N	3
-76	2020-10-15	QUIZ      	0	Translate points	\N	3
-1	2019-10-19	VIDEOS    	0	Origins of algebra	\N	1
-2	2019-10-19	VIDEOS    	0	Abstract-ness	\N	1
-3	2019-10-19	VIDEOS    	0	The beauty of algebra	\N	1
-4	2019-10-19	VIDEOS    	0	Creativity break: Why is creativity importants in algebra?	\N	1
-5	2019-10-19	VIDEOS    	0	Intro to the coordinate plane	\N	1
-6	2019-10-19	VIDEOS    	0	Why all the letters in algebra?	\N	1
-7	2019-10-19	VIDEOS    	0	What is a variable?	\N	1
-8	2019-10-19	VIDEOS    	0	Why aren't we using the multiplication sign?	\N	1
-9	2019-10-19	VIDEOS    	0	Creativity break: Why is creativity important in STEM jobs?	\N	1
-10	2019-10-19	VIDEOS    	0	Evaluating expressions with one variable	\N	1
-11	2019-10-19	PAGE      	0	Evaluating expressions with one variable	\N	1
-13	2019-10-19	PAGE      	0	Evaluating expressions with two variables	\N	1
-15	2019-10-19	PAGE      	0	Evaluating expressions with two variables: fractions & decimals	\N	1
-16	2019-10-19	QUIZ      	0	Evaluating expressions with multiple variables	\N	1
-17	2019-10-19	QUIZ      	0	Evaluating expressions with multiple variables: fractions and decimals	\N	1
-21	2019-10-19	QUIZ      	0	Combining like terms with negative coefficients	\N	1
-22	2019-10-19	QUIZ      	0	Combining like terms with negative coefficients and distribution	\N	1
-20	2019-10-19	VIDEOS    	0	Combining like terms with rational coefficients	\N	1
-24	2019-10-19	VIDEOS    	0	Equivalent expressions	\N	1
-26	2019-10-19	VIDEOS    	0	Why dividing by zero is undefined?	\N	1
-27	2019-10-19	VIDEOS    	0	The problem with dividing zero by zero	\N	1
-28	2019-10-19	VIDEOS    	0	Undefined and indeterminate expressions	\N	1
-23	2019-10-19	QUIZ      	0	Combining like terms with rational coefficients	\N	1
-25	2019-10-19	QUIZ      	0	Equivalent expressions	\N	1
-29	2019-10-01	VIDEOS    	0	Polinomials intro	\N	2
-30	2019-10-01	VIDEOS    	0	The parts of polynomial expressions	\N	2
-31	2019-10-01	VIDEOS    	0	Finding average rate of change of polynomials	\N	2
-32	2019-10-01	VIDEOS    	0	Sign of average rate of change of polynomials	\N	2
-34	2019-10-01	VIDEOS    	0	Adding polynomials	\N	2
-35	2019-10-01	VIDEOS    	0	Subtracting polynomials	\N	2
-36	2019-10-01	VIDEOS    	0	Polynomial subtraction	\N	2
-41	2019-10-01	VIDEOS    	0	Multiplying monomials	\N	2
-42	2019-10-01	VIDEOS    	0	Multiplying monomials by polynomials: area model	\N	2
-43	2019-10-01	VIDEOS    	0	Area model for multiplying monomials with negative terms	\N	2
-92	2020-03-12	VIDEOS    	0	Interpreting a histogram	\N	5
-95	2020-05-08	VIDEOS    	0	Identifying individuals, variables and catagorical variables in a data set	\N	6
-96	2020-05-08	VIDEOS    	0	Reading pictographs	\N	6
-33	2019-10-01	QUIZ      	0	Average rate of change of polynomials	\N	2
-37	2019-10-01	PAGE      	0	Adding and subtracting polynomials review	\N	2
-38	2019-10-01	QUIZ      	0	Add polynomials (intro)	\N	2
-39	2019-10-01	QUIZ      	0	Subtract polynomials (intro)	\N	2
-40	2019-10-01	QUIZ      	0	Add and subtract polynomials	\N	2
-93	2020-03-12	QUIZ      	0	Create histograms	\N	5
-94	2020-03-12	QUIZ      	0	Read histograms	\N	5
-90	2020-03-12	QUIZ      	0	Reading dot plots & frequency tables	\N	5
-62	2020-10-15	QUIZ      	0	Geometric definitions	\N	3
-65	2020-10-15	PAGE      	0	Translations intro	\N	3
-66	2020-10-15	PAGE      	0	Rotations intro	\N	3
-68	2020-10-15	QUIZ      	0	Identify transformations	\N	3
-71	2020-10-15	PAGE      	0	Determining translations	\N	3
-73	2020-10-15	PAGE      	0	Translating shapes	\N	3
-97	2020-05-08	VIDEOS    	0	Reading bar graphs	\N	6
-102	2020-11-13	VIDEOS    	0	Scarcity	\N	8
-89	2020-03-12	VIDEOS    	0	Frequency tables and dot plots	\N	5
-91	2020-03-12	VIDEOS    	0	Creating a histogram	\N	5
-59	2020-10-15	VIDEOS    	0	Euclid as father of geometry	\N	3
-60	2020-10-15	VIDEOS    	0	Terms & labels in geometry	\N	3
-61	2020-10-15	VIDEOS    	0	Geometric definitions example	\N	3
-63	2020-10-15	VIDEOS    	0	Rigid transformations intro	\N	3
-64	2020-10-15	VIDEOS    	0	Dilations intro	\N	3
-67	2020-10-15	VIDEOS    	0	Identifying transformations	\N	3
-69	2020-10-15	VIDEOS    	0	Translating points	\N	3
-70	2020-10-15	VIDEOS    	0	Determining translations	\N	3
-72	2020-10-15	VIDEOS    	0	Translating shapes	\N	3
-44	2019-10-01	VIDEOS    	0	Multiplying monomials by polynomials	\N	2
-49	2019-10-01	VIDEOS    	0	Multiply binomials by polynomials: area model	\N	2
-50	2019-10-01	VIDEOS    	0	Multiply binomials by polynomials	\N	2
-54	2019-10-01	VIDEOS    	0	Polynomial special products: difference of squares	\N	2
-55	2019-10-01	VIDEOS    	0	Polynomial special products: perfect square	\N	2
-82	2020-03-11	VIDEOS    	0	Using similarity to estimate ratio between side lengths	\N	4
-83	2020-03-11	VIDEOS    	0	Using right triangle ratios to approximate angle measure	\N	4
-85	2020-03-11	VIDEOS    	0	Triangle similarity & the trigonometric ratios	\N	4
-86	2020-03-11	VIDEOS    	0	Traingle ratios in right triangles	\N	4
-98	2020-05-08	VIDEOS    	0	Creating a bar graph	\N	6
-99	2020-10-16	VIDEOS    	0	What is Programming?	\N	7
-105	2021-03-13	VIDEOS    	0	Binary and data	\N	9
-101	2020-11-13	VIDEOS    	0	Introduction to economics	\N	8
-103	2020-11-13	VIDEOS    	0	Scarcity and rivalry	\N	8
-107	2021-05-15	VIDEOS    	0	Introoduction to economics	\N	10
-108	2021-05-15	VIDEOS    	0	Scarcity	\N	10
-109	2021-05-15	VIDEOS    	0	Normative and positive statements	\N	10
-45	2019-10-01	PAGE      	0	Multiplying monomials by polynomials review	\N	2
-46	2019-10-01	QUIZ      	0	Multiply monomials	\N	2
-47	2019-10-01	QUIZ      	0	Multiply monomials by polynomials: area model	\N	2
-48	2019-10-01	QUIZ      	0	Multiply monomials by polynomials	\N	2
-51	2019-10-01	PAGE      	0	Multiply binomials by polynomials review	\N	2
-52	2019-10-01	QUIZ      	0	Multiply binomials by polynomials: area model	\N	2
-53	2019-10-01	QUIZ      	0	Multiply binomials by polynomials	\N	2
-56	2019-10-01	QUIZ      	0	Polynomial special products: difference of squares	\N	2
-57	2019-10-01	QUIZ      	0	Polynomial special products: perfect square	\N	2
-77	2020-10-15	QUIZ      	0	Determining translations	\N	3
-78	2020-10-15	QUIZ      	0	Translate shapes	\N	3
-79	2020-03-11	PAGE      	0	Getting ready for right triangles and trigonometry	\N	4
-80	2020-03-11	PAGE      	0	Hypotenuse, opposite and trigonometry	\N	4
-81	2020-03-11	PAGE      	0	Side ratios in right triangles as afunction of the angles	\N	4
-84	2020-03-11	QUIZ      	0	Use ratios in right triangles	\N	4
-87	2020-03-11	PAGE      	0	Traingle ratios in right triangles	\N	4
-88	2020-03-11	QUIZ      	0	Traingle ratios in right triangles	\N	4
-100	2020-10-16	PAGE      	0	Learn programming on ePathshala	\N	7
-104	2021-03-13	PAGE      	0	How do computers represent data?	\N	9
-106	2021-03-13	Page      	0	Bits (binary digits)	\N	9
+58	2020-10-15	PAGE      	0	Getting ready for performing transformations	                                                                                                    	3
+75	2020-10-15	PAGE      	0	Properties of translations	                                                                                                    	3
+76	2020-10-15	QUIZ      	0	Translate points	                                                                                                    	3
+11	2019-10-19	PAGE      	0	Evaluating expressions with one variable	                                                                                                    	1
+13	2019-10-19	PAGE      	0	Evaluating expressions with two variables	                                                                                                    	1
+15	2019-10-19	PAGE      	0	Evaluating expressions with two variables: fractions & decimals	                                                                                                    	1
+16	2019-10-19	QUIZ      	0	Evaluating expressions with multiple variables	                                                                                                    	1
+17	2019-10-19	QUIZ      	0	Evaluating expressions with multiple variables: fractions and decimals	                                                                                                    	1
+21	2019-10-19	QUIZ      	0	Combining like terms with negative coefficients	                                                                                                    	1
+22	2019-10-19	QUIZ      	0	Combining like terms with negative coefficients and distribution	                                                                                                    	1
+23	2019-10-19	QUIZ      	0	Combining like terms with rational coefficients	                                                                                                    	1
+25	2019-10-19	QUIZ      	0	Equivalent expressions	                                                                                                    	1
+33	2019-10-01	QUIZ      	0	Average rate of change of polynomials	                                                                                                    	2
+37	2019-10-01	PAGE      	0	Adding and subtracting polynomials review	                                                                                                    	2
+38	2019-10-01	QUIZ      	0	Add polynomials (intro)	                                                                                                    	2
+39	2019-10-01	QUIZ      	0	Subtract polynomials (intro)	                                                                                                    	2
+40	2019-10-01	QUIZ      	0	Add and subtract polynomials	                                                                                                    	2
+93	2020-03-12	QUIZ      	0	Create histograms	                                                                                                    	5
+94	2020-03-12	QUIZ      	0	Read histograms	                                                                                                    	5
+90	2020-03-12	QUIZ      	0	Reading dot plots & frequency tables	                                                                                                    	5
+62	2020-10-15	QUIZ      	0	Geometric definitions	                                                                                                    	3
+65	2020-10-15	PAGE      	0	Translations intro	                                                                                                    	3
+66	2020-10-15	PAGE      	0	Rotations intro	                                                                                                    	3
+68	2020-10-15	QUIZ      	0	Identify transformations	                                                                                                    	3
+71	2020-10-15	PAGE      	0	Determining translations	                                                                                                    	3
+73	2020-10-15	PAGE      	0	Translating shapes	                                                                                                    	3
+45	2019-10-01	PAGE      	0	Multiplying monomials by polynomials review	                                                                                                    	2
+46	2019-10-01	QUIZ      	0	Multiply monomials	                                                                                                    	2
+47	2019-10-01	QUIZ      	0	Multiply monomials by polynomials: area model	                                                                                                    	2
+48	2019-10-01	QUIZ      	0	Multiply monomials by polynomials	                                                                                                    	2
+51	2019-10-01	PAGE      	0	Multiply binomials by polynomials review	                                                                                                    	2
+52	2019-10-01	QUIZ      	0	Multiply binomials by polynomials: area model	                                                                                                    	2
+53	2019-10-01	QUIZ      	0	Multiply binomials by polynomials	                                                                                                    	2
+56	2019-10-01	QUIZ      	0	Polynomial special products: difference of squares	                                                                                                    	2
+57	2019-10-01	QUIZ      	0	Polynomial special products: perfect square	                                                                                                    	2
+77	2020-10-15	QUIZ      	0	Determining translations	                                                                                                    	3
+78	2020-10-15	QUIZ      	0	Translate shapes	                                                                                                    	3
+79	2020-03-11	PAGE      	0	Getting ready for right triangles and trigonometry	                                                                                                    	4
+80	2020-03-11	PAGE      	0	Hypotenuse, opposite and trigonometry	                                                                                                    	4
+81	2020-03-11	PAGE      	0	Side ratios in right triangles as afunction of the angles	                                                                                                    	4
+84	2020-03-11	QUIZ      	0	Use ratios in right triangles	                                                                                                    	4
+87	2020-03-11	PAGE      	0	Traingle ratios in right triangles	                                                                                                    	4
+88	2020-03-11	QUIZ      	0	Traingle ratios in right triangles	                                                                                                    	4
+100	2020-10-16	PAGE      	0	Learn programming on ePathshala	                                                                                                    	7
+104	2021-03-13	PAGE      	0	How do computers represent data?	                                                                                                    	9
+106	2021-03-13	PAGE      	0	Bits (binary digits)	                                                                                                    	9
+74	2020-10-15	VIDEO     	0	Transition challenge problem	                                                                                                    	3
+12	2019-10-19	VIDEO     	0	Evaluating expressions with two variables	                                                                                                    	1
+14	2019-10-19	VIDEO     	0	Evaluating expressions with two variables: fractions & decimals	                                                                                                    	1
+18	2019-10-19	VIDEO     	0	Combining like terms with negative coefficients & distribution	                                                                                                    	1
+19	2019-10-19	VIDEO     	0	Combining like terms with negative coefficients	                                                                                                    	1
+1	2019-10-19	VIDEO     	0	Origins of algebra	                                                                                                    	1
+2	2019-10-19	VIDEO     	0	Abstract-ness	                                                                                                    	1
+3	2019-10-19	VIDEO     	0	The beauty of algebra	                                                                                                    	1
+4	2019-10-19	VIDEO     	0	Creativity break: Why is creativity importants in algebra?	                                                                                                    	1
+5	2019-10-19	VIDEO     	0	Intro to the coordinate plane	                                                                                                    	1
+6	2019-10-19	VIDEO     	0	Why all the letters in algebra?	                                                                                                    	1
+7	2019-10-19	VIDEO     	0	What is a variable?	                                                                                                    	1
+8	2019-10-19	VIDEO     	0	Why aren't we using the multiplication sign?	                                                                                                    	1
+9	2019-10-19	VIDEO     	0	Creativity break: Why is creativity important in STEM jobs?	                                                                                                    	1
+10	2019-10-19	VIDEO     	0	Evaluating expressions with one variable	                                                                                                    	1
+20	2019-10-19	VIDEO     	0	Combining like terms with rational coefficients	                                                                                                    	1
+24	2019-10-19	VIDEO     	0	Equivalent expressions	                                                                                                    	1
+26	2019-10-19	VIDEO     	0	Why dividing by zero is undefined?	                                                                                                    	1
+99	2020-10-16	VIDEO     	0	What is Programming?	                                                                                                    	7
+27	2019-10-19	VIDEO     	0	The problem with dividing zero by zero	                                                                                                    	1
+28	2019-10-19	VIDEO     	0	Undefined and indeterminate expressions	                                                                                                    	1
+29	2019-10-01	VIDEO     	0	Polinomials intro	                                                                                                    	2
+30	2019-10-01	VIDEO     	0	The parts of polynomial expressions	                                                                                                    	2
+31	2019-10-01	VIDEO     	0	Finding average rate of change of polynomials	                                                                                                    	2
+32	2019-10-01	VIDEO     	0	Sign of average rate of change of polynomials	                                                                                                    	2
+34	2019-10-01	VIDEO     	0	Adding polynomials	                                                                                                    	2
+35	2019-10-01	VIDEO     	0	Subtracting polynomials	                                                                                                    	2
+36	2019-10-01	VIDEO     	0	Polynomial subtraction	                                                                                                    	2
+41	2019-10-01	VIDEO     	0	Multiplying monomials	                                                                                                    	2
+42	2019-10-01	VIDEO     	0	Multiplying monomials by polynomials: area model	                                                                                                    	2
+43	2019-10-01	VIDEO     	0	Area model for multiplying monomials with negative terms	                                                                                                    	2
+92	2020-03-12	VIDEO     	0	Interpreting a histogram	                                                                                                    	5
+95	2020-05-08	VIDEO     	0	Identifying individuals, variables and catagorical variables in a data set	                                                                                                    	6
+96	2020-05-08	VIDEO     	0	Reading pictographs	                                                                                                    	6
+97	2020-05-08	VIDEO     	0	Reading bar graphs	                                                                                                    	6
+102	2020-11-13	VIDEO     	0	Scarcity	                                                                                                    	8
+89	2020-03-12	VIDEO     	0	Frequency tables and dot plots	                                                                                                    	5
+91	2020-03-12	VIDEO     	0	Creating a histogram	                                                                                                    	5
+59	2020-10-15	VIDEO     	0	Euclid as father of geometry	                                                                                                    	3
+60	2020-10-15	VIDEO     	0	Terms & labels in geometry	                                                                                                    	3
+61	2020-10-15	VIDEO     	0	Geometric definitions example	                                                                                                    	3
+63	2020-10-15	VIDEO     	0	Rigid transformations intro	                                                                                                    	3
+64	2020-10-15	VIDEO     	0	Dilations intro	                                                                                                    	3
+67	2020-10-15	VIDEO     	0	Identifying transformations	                                                                                                    	3
+69	2020-10-15	VIDEO     	0	Translating points	                                                                                                    	3
+70	2020-10-15	VIDEO     	0	Determining translations	                                                                                                    	3
+72	2020-10-15	VIDEO     	0	Translating shapes	                                                                                                    	3
+44	2019-10-01	VIDEO     	0	Multiplying monomials by polynomials	                                                                                                    	2
+49	2019-10-01	VIDEO     	0	Multiply binomials by polynomials: area model	                                                                                                    	2
+50	2019-10-01	VIDEO     	0	Multiply binomials by polynomials	                                                                                                    	2
+54	2019-10-01	VIDEO     	0	Polynomial special products: difference of squares	                                                                                                    	2
+55	2019-10-01	VIDEO     	0	Polynomial special products: perfect square	                                                                                                    	2
+82	2020-03-11	VIDEO     	0	Using similarity to estimate ratio between side lengths	                                                                                                    	4
+83	2020-03-11	VIDEO     	0	Using right triangle ratios to approximate angle measure	                                                                                                    	4
+98	2020-05-08	VIDEO     	0	Creating a bar graph	                                                                                                    	6
+85	2020-03-11	VIDEO     	0	Triangle similarity & the trigonometric ratios	                                                                                                    	4
+86	2020-03-11	VIDEO     	0	Traingle ratios in right triangles	                                                                                                    	4
+105	2021-03-13	VIDEO     	0	Binary and data	                                                                                                    	9
+101	2020-11-13	VIDEO     	0	Introduction to economics	                                                                                                    	8
+103	2020-11-13	VIDEO     	0	Scarcity and rivalry	                                                                                                    	8
+107	2021-05-15	VIDEO     	0	Introoduction to economics	                                                                                                    	10
+108	2021-05-15	VIDEO     	0	Scarcity	                                                                                                    	10
+109	2021-05-15	VIDEO     	0	Normative and positive statements	                                                                                                    	10
 \.
 
 
@@ -3691,9 +3677,9 @@ COPY public.users (user_id, full_name, security_key, date_of_birth, bio, email, 
 55	Mike Mills	dvlDY)*o                        	1985-11-09	                                                                                                    	mike7179@gmail.com	null	TEACHER   	m	55	2
 56	Charles Wiltberger	HHFv9URG                        	1982-09-21	                                                                                                    	charles2480@gmail.com	null	TEACHER   	m	56	1
 57	Henry Depalma	3lrQ!(Zv                        	1993-06-27	                                                                                                    	henry4121@gmail.com	null	TEACHER   	m	57	3
+60	Pamela Pemberton	czQpXFIM                        	1981-02-21	                                                                                                    	pamela4346@gmail.com	null	TEACHER   	f	60	3
 58	Mario Barnett	&egIAT%%                        	1998-02-23	                                                                                                    	mario4755@gmail.com	null	TEACHER   	m	58	3
 59	Hubert Rodriguez	knk(^vpi                        	1988-11-19	                                                                                                    	hubert3151@gmail.com	null	TEACHER   	m	59	3
-60	Pamela Pemberton	czQpXFIM                        	1981-02-21	                                                                                                    	pamela4346@gmail.com	null	TEACHER   	f	60	3
 \.
 
 
@@ -3736,7 +3722,7 @@ SELECT pg_catalog.setval('public.tags_tag_id_seq', 1, false);
 -- Name: users_user_id_seq; Type: SEQUENCE SET; Schema: public; Owner: epathshala
 --
 
-SELECT pg_catalog.setval('public.users_user_id_seq', 1, false);
+SELECT pg_catalog.setval('public.users_user_id_seq', 1, true);
 
 
 --
