@@ -14,12 +14,19 @@ add_executable(ePathshala
     "src/HandleRequests/root/InitNotLoggedIn.cpp"
     "src/HandleRequests/root/Login.cpp"
     "src/HandleRequests/root/Search.cpp"
+<<<<<<< Updated upstream
     "src/HandleRequests/root/GetContents.cpp"
+=======
+    "src/HandleRequests/root/GetAllCourses.cpp"
+>>>>>>> Stashed changes
 )
 
 find_package(Drogon REQUIRED)
 target_link_libraries(ePathshala Drogon::Drogon)
 
+<<<<<<< Updated upstream
 file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/sql ${CMAKE_BINARY_DIR}/data)
+=======
+>>>>>>> Stashed changes
 file(COPY ${CMAKE_SOURCE_DIR}/sql DESTINATION ${CMAKE_BINARY_DIR})
 file(COPY ${CMAKE_SOURCE_DIR}/data DESTINATION ${CMAKE_BINARY_DIR})

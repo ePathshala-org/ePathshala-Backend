@@ -6,7 +6,7 @@ void Login(Json::Value &requestJson, Json::Value &response, drogon::orm::DbClien
     {
         std::clog << "Got \"login student\" request" << std::endl;
 
-        std::ifstream inputFileStream("../../../sql/login/student/check-email.sql");
+        std::ifstream inputFileStream("./sql/login/student/check-email.sql");
         std::stringstream queryStream;
 
         queryStream << inputFileStream.rdbuf();
@@ -34,7 +34,7 @@ void Login(Json::Value &requestJson, Json::Value &response, drogon::orm::DbClien
         {
             queryStream.str("");
             inputFileStream.close();
-            inputFileStream.open("../../../sql/login/student/email-found.sql");
+            inputFileStream.open("./sql/login/student/email-found.sql");
 
             queryStream << inputFileStream.rdbuf();
 
@@ -69,7 +69,7 @@ void Login(Json::Value &requestJson, Json::Value &response, drogon::orm::DbClien
     {
         std::clog << "Got \"login teacher\" request" << std::endl;
 
-        std::ifstream inputFileStream("../../../sql/login/teacher/check-email.sql");
+        std::ifstream inputFileStream("./sql/login/teacher/check-email.sql");
         std::stringstream queryStream;
 
         queryStream << inputFileStream.rdbuf();
@@ -97,7 +97,7 @@ void Login(Json::Value &requestJson, Json::Value &response, drogon::orm::DbClien
         {
             queryStream.str("");
             inputFileStream.close();
-            inputFileStream.open("../../../sql/login/teacher/email-found.sql");
+            inputFileStream.open("./sql/login/teacher/email-found.sql");
 
             queryStream << inputFileStream.rdbuf();
 

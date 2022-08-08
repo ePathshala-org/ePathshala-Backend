@@ -4,7 +4,7 @@ void GetStudentCourses(Json::Value &requestJson, Json::Value &response, drogon::
 {
     std::clog << "Got \"students-courses\" request" << std::endl;
 
-    std::ifstream inputFileStream("../../../sql/get-student-courses.sql");
+    std::ifstream inputFileStream("./sql/get-student-courses.sql");
     std::stringstream queryStream;
 
     queryStream << inputFileStream.rdbuf();

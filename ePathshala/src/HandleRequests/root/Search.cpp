@@ -8,7 +8,7 @@ void Search(Json::Value &requestJson, Json::Value &response, drogon::orm::DbClie
     {
         std::clog << "Courses search request" << std::endl;
 
-        std::ifstream inputFileStream("../../../sql/search/courses/search-result.sql");
+        std::ifstream inputFileStream("./sql/search/courses/search-result.sql");
         std::string searchQuery = requestJson["search_query"].asString();
         std::stringstream queryStream;
         long page = requestJson["page"].as<Json::Int64>();
@@ -55,7 +55,7 @@ void Search(Json::Value &requestJson, Json::Value &response, drogon::orm::DbClie
     {
         std::clog << "Videos search request" << std::endl;
 
-        std::ifstream inputFileStream("../../../sql/search/videos/search-result.sql");
+        std::ifstream inputFileStream("./sql/search/videos/search-result.sql");
         std::string searchQuery = requestJson["search_query"].asString();
         long page = requestJson["page"].as<Json::Int64>();
         std::stringstream queryStream;
@@ -103,7 +103,7 @@ void Search(Json::Value &requestJson, Json::Value &response, drogon::orm::DbClie
     {
         std::clog << "Pages search request" << std::endl;
 
-        std::ifstream inputFileStream("../../../sql/search/pages/search-result.sql");
+        std::ifstream inputFileStream("./sql/search/pages/search-result.sql");
         std::string searchQuery = requestJson["search_query"].asString();
         long page = requestJson["page"].as<Json::Int64>();
         std::stringstream queryStream;
@@ -151,7 +151,7 @@ void Search(Json::Value &requestJson, Json::Value &response, drogon::orm::DbClie
     {
         std::clog << "Quizes search request" << std::endl;
 
-        std::ifstream inputFileStream("../../../sql/search/search-result.sql");
+        std::ifstream inputFileStream("./sql/search/search-result.sql");
         std::string searchQuery = requestJson["search_query"].asString();
         long page = requestJson["page"].as<Json::Int64>();
         std::stringstream queryStream;
@@ -200,7 +200,7 @@ void Search(Json::Value &requestJson, Json::Value &response, drogon::orm::DbClie
     {
         std::clog << "Students search request" << std::endl;
 
-        std::ifstream inputFileStream("../../../sql/search/students/search-result.sql");
+        std::ifstream inputFileStream("./sql/search/students/search-result.sql");
         std::string searchQuery = requestJson["search_query"].asString();
         long page = requestJson["page"].as<Json::Int64>();
         std::stringstream queryStream;
@@ -245,7 +245,7 @@ void Search(Json::Value &requestJson, Json::Value &response, drogon::orm::DbClie
     {
         std::clog << "Teachers search request" << std::endl;
 
-        std::ifstream inputFileStream("../../../sql/teachers/search-result.sql");
+        std::ifstream inputFileStream("./sql/teachers/search-result.sql");
         std::string searchQuery = requestJson["search_query"].asString();
         long page = requestJson["page"].as<Json::Int64>();
         std::stringstream queryStream;

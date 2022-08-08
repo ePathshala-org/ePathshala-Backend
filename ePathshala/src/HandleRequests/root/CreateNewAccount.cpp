@@ -93,7 +93,7 @@ void CreateNewAccount(Json::Value &requestJson, Json::Value &response, drogon::o
         {
             std::clog << "Creating new student" << std::endl;
 
-            inputFileStream.open("../../../sql/create-new-account/create-new-student-account.sql");
+            inputFileStream.open("./sql/create-new-account/create-new-student-account.sql");
 
             queryStream << inputFileStream.rdbuf();
 
@@ -103,7 +103,7 @@ void CreateNewAccount(Json::Value &requestJson, Json::Value &response, drogon::o
         {
             std::clog << "Creating new teacher" << std::endl;
 
-            inputFileStream.open("../../../sql/create-new-account/create-new-teacher-account.sql");
+            inputFileStream.open("./sql/create-new-account/create-new-teacher-account.sql");
 
             queryStream << inputFileStream.rdbuf();
 

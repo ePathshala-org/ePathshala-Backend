@@ -4,7 +4,7 @@ void GetTeacherDetailsHome(Json::Value &requestJson, Json::Value &response, drog
 {
     std::clog << "Get \"teacher-details-home\" request" << std::endl;
 
-    std::ifstream inputFileStream("../../../sql/get-teacher-details-home.sql");
+    std::ifstream inputFileStream("./sql/get-teacher-details-home.sql");
     std::stringstream queryStream;
 
     queryStream << inputFileStream.rdbuf();

@@ -4,7 +4,8 @@ void InitNotLoggedIn(Json::Value &requestJson, Json::Value &response, drogon::or
 {
     std::clog << "Got \"init-not-logged-in\" request" << std::endl;
 
-    std::ifstream inputFileStream("../../../sql/init-not-logged-in/top-courses.sql");
+    std::ifstream inputFileStream("./sql/init-not-logged-in/top-courses.sql");
+
     std::stringstream queryStream;
 
     queryStream << inputFileStream.rdbuf();
@@ -33,7 +34,7 @@ void InitNotLoggedIn(Json::Value &requestJson, Json::Value &response, drogon::or
 
     queryStream.str("");
     inputFileStream.close();
-    inputFileStream.open("../../../sql/init-not-logged-in/top-videos.sql");
+    inputFileStream.open("./sql/init-not-logged-in/top-videos.sql");
 
     queryStream << inputFileStream.rdbuf();
 
