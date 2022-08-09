@@ -19,6 +19,7 @@ int main()
 
 	httpAppFramework.setThreadNum(16);
     httpAppFramework.setDocumentRoot(initData["docRoot"].asString());
+    httpAppFramework.setFileTypes({"gif", "png", "jpg", "js", "css", "html", "ico", "swf", "xap", "apk", "cur", "xml", "mp4", "webm", "ogg"});
 
 	httpAppFramework.registerHandler("/",
     [&dbClient](const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback)
