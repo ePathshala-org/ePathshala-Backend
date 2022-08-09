@@ -28,6 +28,8 @@ int main()
         Json::Value &requestJson = *reqJsonPtr.get();
         Json::Value response;
 
+        std::clog << "type: " << requestJson["type"].asString() << std::endl;
+
         if(requestJson["type"].asString() == "init-not-logged-in")
         {
             InitNotLoggedIn(requestJson, response, dbClient);
@@ -80,9 +82,13 @@ int main()
         {
             GetCourseDetails(requestJson, response, dbClient);
         }
-        else if(requestJson["type"].asString() == "get-content-course-id")
+        else if(requestJson["type"].asString() == "get-content-details")
         {
-            GetContentCourseId(requestJson, response, dbClient);
+            GetContentDetails(requestJson, response, dbClient);
+        }
+        else if(requestJson["type"].asString() == "get-comments")
+        {
+            GetComments(requestJson, response, dbClient);
         }
 
         std::clog << "Sending response" << std::endl;
