@@ -13,3 +13,4 @@
 #include "root/GetStudentDetails.h"
 #include "root/GetAllCourses.h"
 #include "root/GetCourseDetails.h"
+#include "root/GetContentCourseId.h"

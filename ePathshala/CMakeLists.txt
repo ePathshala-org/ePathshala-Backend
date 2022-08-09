@@ -22,6 +22,7 @@ add_executable(ePathshala
     "src/HandleRequests/root/GetAllCourses.cpp"
     "src/HandleRequests/root/GetStudentDetails.cpp"
     "src/HandleRequests/root/GetCourseDetails.cpp"
+    "src/HandleRequests/root/GetContentCourseId.cpp"
 )
 
 find_package(Drogon REQUIRED)

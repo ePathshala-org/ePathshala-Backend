@@ -9,7 +9,7 @@ void GetCourseContents(Json::Value &requestJson, Json::Value &response, drogon::
 
     queryStream << inputFileStream.rdbuf();
 
-    std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), requestJson["course_id"].asString());
+    std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), requestJson["course_id"].asInt64());
 
     resultFuture.wait();
 

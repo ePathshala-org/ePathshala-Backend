@@ -63,7 +63,7 @@ int main()
         {
             CreateNewAccount(requestJson, response, dbClient);
         }
-        else if(requestJson["type"].asString() == "get-contents")
+        else if(requestJson["type"].asString() == "get-course-contents")
         {
             GetCourseContents(requestJson, response, dbClient);
         }
@@ -78,6 +78,10 @@ int main()
         else if(requestJson["type"].asString() == "get-course-details")
         {
             GetCourseDetails(requestJson, response, dbClient);
+        }
+        else if(requestJson["type"].asString() == "get-content-course-id")
+        {
+            GetContentCourseId(requestJson, response, dbClient);
         }
 
         std::clog << "Sending response" << std::endl;
