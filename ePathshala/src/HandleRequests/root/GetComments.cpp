@@ -29,4 +29,6 @@ void GetComments(Json::Value &requestJson, Json::Value &response, drogon::orm::D
 
         response["comments"].append(comment);
     }
+
+    response["ok"] = true;
 }
