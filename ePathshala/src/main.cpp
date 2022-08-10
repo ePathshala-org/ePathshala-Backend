@@ -90,6 +90,10 @@ int main()
         {
             GetComments(requestJson, response, dbClient);
         }
+        else if(requestJson["type"].asString() == "get-user-details"
+        {
+            
+        })
 
         std::clog << "Sending response" << std::endl;
 

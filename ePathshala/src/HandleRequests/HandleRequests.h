@@ -15,3 +15,4 @@
 #include "root/GetCourseDetails.h"
 #include "root/GetContentDetails.h"
 #include "root/GetComments.h"
+#include "root/GetUserDetails.h"
