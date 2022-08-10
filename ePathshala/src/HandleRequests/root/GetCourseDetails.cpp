@@ -15,7 +15,7 @@ void GetCourseDetails(Json::Value &requestJson, Json::Value &response, drogon::o
 
     drogon::orm::Result result = resultFuture.get();
 
-    response["course_id"] = result[0]["COURSE_ID"].as<Json::String>();
+    response["course_id"] = result[0]["COURSE_ID"].as<Json::Int64>();
     response["title"] = result[0]["TITLE"].as<Json::String>();
     response["description"] = result[0]["DESCRIPTION"].as<Json::String>();
     response["date_of_creation"] = result[0]["DATE_OF_CREATION"].as<Json::String>();
