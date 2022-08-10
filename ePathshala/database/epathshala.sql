@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 14.3
--- Dumped by pg_dump version 14.3
+-- Dumped from database version 14.4
+-- Dumped by pg_dump version 14.2
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -389,6 +389,38 @@ COPY public.banks (bank_id, name) FROM stdin;
 COPY public.comments (comment_id, content_id, commenter_id, description, time_of_comment, date_of_comment, rate) FROM stdin;
 1	5	5	Epic Video                                                                                          	23:43:54.742951	2022-08-09	0
 2	5	6	Nice Content                                                                                        	23:47:13.830674	2022-08-09	0
+3	2	10	Nice Video                                                                                          	12:07:19.668792	2022-08-10	0
+4	58	4	This video is so good                                                                               	12:12:49.393984	2022-08-10	0
+5	76	8	Very interesting                                                                                    	12:13:58.438193	2022-08-10	0
+6	18	10	So interesting                                                                                      	12:14:47.79637	2022-08-10	0
+7	26	5	Nice video                                                                                          	12:16:29.501434	2022-08-10	0
+8	28	9	Very educative and interesting                                                                      	12:17:26.202425	2022-08-10	0
+9	20	3	Epic video                                                                                          	12:18:07.085111	2022-08-10	0
+10	10	11	Very interesting                                                                                    	12:18:54.902129	2022-08-10	0
+11	29	12	Nice video                                                                                          	12:20:54.534385	2022-08-10	0
+12	30	13	Very interesting                                                                                    	12:21:53.161317	2022-08-10	0
+13	31	14	Nice video                                                                                          	12:23:07.01231	2022-08-10	0
+14	32	15	Nice video                                                                                          	12:23:43.029293	2022-08-10	0
+15	34	16	Good video                                                                                          	12:24:24.386183	2022-08-10	0
+16	35	17	Good video                                                                                          	12:25:35.726114	2022-08-10	0
+17	36	18	Good video                                                                                          	12:26:08.14207	2022-08-10	0
+18	41	19	Nice video                                                                                          	12:26:54.631863	2022-08-10	0
+19	42	20	Nice video                                                                                          	12:27:25.668196	2022-08-10	0
+20	43	21	Nice video                                                                                          	12:27:57.538574	2022-08-10	0
+21	44	22	Nice video                                                                                          	12:28:26.72058	2022-08-10	0
+22	49	23	Nice video                                                                                          	12:29:22.335725	2022-08-10	0
+23	50	24	Nice video                                                                                          	12:29:47.419028	2022-08-10	0
+24	54	25	Good video                                                                                          	12:30:15.696765	2022-08-10	0
+25	55	26	Good video                                                                                          	12:30:40.976242	2022-08-10	0
+26	59	27	Good video                                                                                          	12:31:10.940604	2022-08-10	0
+27	60	28	Good video                                                                                          	12:31:59.66335	2022-08-10	0
+28	61	29	Good video                                                                                          	12:32:25.566055	2022-08-10	0
+29	63	30	Nice video                                                                                          	12:33:19.474026	2022-08-10	0
+30	64	31	Nice video                                                                                          	12:33:49.460981	2022-08-10	0
+31	67	32	Good video                                                                                          	12:34:23.553031	2022-08-10	0
+32	69	33	Nice video                                                                                          	12:36:07.030046	2022-08-10	0
+33	70	34	Good video                                                                                          	12:36:54.322879	2022-08-10	0
+34	72	35	Nice video                                                                                          	12:37:31.458354	2022-08-10	0
 \.
 
 
