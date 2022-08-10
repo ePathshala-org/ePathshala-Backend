@@ -90,10 +90,14 @@ int main()
         {
             GetComments(requestJson, response, dbClient);
         }
-        else if(requestJson["type"].asString() == "get-user-details"
+        else if(requestJson["type"].asString() == "get-user-details")
         {
-            
-        })
+            GetUserDetails(requestJson, response, dbClient);
+        }
+        else if(requestJson["type"].asString() == "get-courses-popular")
+        {
+            GetCoursesPopular(requestJson, response, dbClient);
+        }
 
         std::clog << "Sending response" << std::endl;
 
