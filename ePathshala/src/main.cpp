@@ -38,6 +38,10 @@ int main()
         {
             GetUserId(request, response, dbClient);
         }
+        else if(request["type"].asString() == "get-courses-popular")
+        {
+            GetCoursesPopular(request, response, dbClient);
+        }
 
         std::clog << "Sending response" << std::endl;
 

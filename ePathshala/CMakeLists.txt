@@ -11,6 +11,7 @@ add_executable(ePathshala
     "src/SetupDbClientPtr.cpp"
     "src/HandleRequests/root/GetUserDetails.cpp"
     "src/HandleRequests/root/GetUserId.cpp"
+    "src/HandleRequests/root/GetCoursesPopular.cpp"
 )
 
 find_package(Drogon REQUIRED)

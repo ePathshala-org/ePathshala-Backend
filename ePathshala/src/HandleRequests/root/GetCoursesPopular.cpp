@@ -18,14 +18,15 @@ void GetCoursesPopular(Json::Value &requestJson, Json::Value &response, drogon::
     for(size_t i = 0; i < result.size(); ++i)
     {
         Json::Value course;
-        course["course_id"] = result[0]["COURSE_ID"].as<Json::Int64>();
-        course["title"] = result[0]["TITLE"].as<Json::String>();
-        course["description"] = result[0]["DESCRIPTION"].as<Json::String>();
-        course["date_of_creation"] = result[0]["DATE_OF_CREATION"].as<Json::String>();
-        course["price"] = result[0]["PRICE"].as<Json::Int>();
-        course["creator_id"] = result[0]["CREATOR_ID"].as<Json::Int64>();
-        course["creator_name"] = result[0]["CREATOR_NAME"].as<Json::String>();
-        course["enroll_count"] = result[0]["ENROLL_COUNT"].as<Json::Int64>();
+        course["COURSE_ID"] = result[i]["COURSE_ID"].as<Json::Int64>();
+        course["TITLE"] = result[i]["TITLE"].as<Json::String>();
+        course["DESCRIPTION"] = result[i]["DESCRIPTION"].as<Json::String>();
+        course["DATE_OF_CREATION"] = result[i]["DATE_OF_CREATION"].as<Json::String>();
+        course["PRICE"] = result[i]["PRICE"].as<Json::Int>();
+        course["CREATOR_ID"] = result[i]["CREATOR_ID"].as<Json::Int64>();
+        course["CREATOR_NAME"] = result[i]["CREATOR_NAME"].as<Json::String>();
+        course["ENROLL_COUNT"] = result[i]["ENROLL_COUNT"].as<Json::Int64>();
+        course["RATE"] = result[i]["RATE"].as<double>();
 
         response["courses"].append(course);
     }
