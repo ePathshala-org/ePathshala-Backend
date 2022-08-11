@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 14.4
--- Dumped by pg_dump version 14.2
+-- Dumped from database version 14.3
+-- Dumped by pg_dump version 14.3
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -15,6 +15,68 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+
+--
+-- Name: get_courses(character varying[]); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_courses(param_order character varying[]) RETURNS TABLE(course_id bigint, title character varying, description text, date_of_creation date, price integer, creator_id bigint, creator_name character varying, enroll_count bigint)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	ORDER_QUERY VARCHAR := '';
+	QUERY_STRING VARCHAR := 'SELECT COURSES.COURSE_ID AS COURSE_ID, TITLE, TRIM(DESCRIPTION) AS DESCRIPTION, DATE_OF_CREATION, PRICE, CREATOR_ID, FULL_NAME AS CREATOR_NAME, COUNT(USERS.USER_ID) AS ENROLL_COUNT FROM COURSES JOIN ENROLLED_COURSES ON(COURSES.COURSE_ID = ENROLLED_COURSES.COURSE_ID) JOIN USERS ON(COURSES.CREATOR_ID = USERS.USER_ID) GROUP BY COURSES.COURSE_ID, TITLE, DESCRIPTION, DATE_OF_CREATION, PRICE, CREATOR_ID, CREATOR_NAME ';
+BEGIN
+	IF ARRAY_LENGTH(PARAM_ORDER, 1) > 0 THEN
+		ORDER_QUERY := 'ORDER BY';
+	END IF;
+	FOR I IN 1..ARRAY_LENGTH(PARAM_ORDER, 1) LOOP
+		IF I > 1 THEN
+			ORDER_QUERY := CONCAT(ORDER_QUERY, ', ', PARAM_ORDER[I][1], ' ', PARAM_ORDER[I][2]);
+		ELSE
+			ORDER_QUERY := CONCAT(ORDER_QUERY, ' ', PARAM_ORDER[I][1], ' ', PARAM_ORDER[I][2]);
+		END IF;
+	END LOOP;
+	QUERY_STRING := CONCAT(QUERY_STRING, ORDER_QUERY);
+	RETURN QUERY EXECUTE QUERY_STRING;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_courses(param_order character varying[]) OWNER TO epathshala;
+
+--
+-- Name: get_user_id(character varying, character varying, boolean); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_user_id(param_email character varying, param_password character varying, param_student boolean) RETURNS bigint
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	RETURN_USER_ID BIGINT;
+BEGIN
+	IF PARAM_STUDENT THEN
+		SELECT USERS.USER_ID INTO RETURN_USER_ID
+		FROM USERS
+		JOIN STUDENTS
+		ON (USERS.USER_ID = STUDENTS.USER_ID)
+		WHERE EMAIL = PARAM_EMAIL AND SECURITY_KEY = PARAM_PASSWORD;
+	ELSE
+		SELECT USERS.USER_ID INTO RETURN_USER_ID
+		FROM USERS
+		JOIN TEACHERS
+		ON (USERS.USER_ID = TEACHERS.USER_ID)
+		WHERE EMAIL = PARAM_EMAIL AND SECURITY_KEY = PARAM_PASSWORD;
+	END IF;
+	IF RETURN_USER_ID IS NULL THEN
+		RETURN_USER_ID := 0;
+    END IF;
+	RETURN RETURN_USER_ID;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_user_id(param_email character varying, param_password character varying, param_student boolean) OWNER TO epathshala;
 
 SET default_tablespace = '';
 
@@ -389,38 +451,6 @@ COPY public.banks (bank_id, name) FROM stdin;
 COPY public.comments (comment_id, content_id, commenter_id, description, time_of_comment, date_of_comment, rate) FROM stdin;
 1	5	5	Epic Video                                                                                          	23:43:54.742951	2022-08-09	0
 2	5	6	Nice Content                                                                                        	23:47:13.830674	2022-08-09	0
-3	2	10	Nice Video                                                                                          	12:07:19.668792	2022-08-10	0
-4	58	4	This video is so good                                                                               	12:12:49.393984	2022-08-10	0
-5	76	8	Very interesting                                                                                    	12:13:58.438193	2022-08-10	0
-6	18	10	So interesting                                                                                      	12:14:47.79637	2022-08-10	0
-7	26	5	Nice video                                                                                          	12:16:29.501434	2022-08-10	0
-8	28	9	Very educative and interesting                                                                      	12:17:26.202425	2022-08-10	0
-9	20	3	Epic video                                                                                          	12:18:07.085111	2022-08-10	0
-10	10	11	Very interesting                                                                                    	12:18:54.902129	2022-08-10	0
-11	29	12	Nice video                                                                                          	12:20:54.534385	2022-08-10	0
-12	30	13	Very interesting                                                                                    	12:21:53.161317	2022-08-10	0
-13	31	14	Nice video                                                                                          	12:23:07.01231	2022-08-10	0
-14	32	15	Nice video                                                                                          	12:23:43.029293	2022-08-10	0
-15	34	16	Good video                                                                                          	12:24:24.386183	2022-08-10	0
-16	35	17	Good video                                                                                          	12:25:35.726114	2022-08-10	0
-17	36	18	Good video                                                                                          	12:26:08.14207	2022-08-10	0
-18	41	19	Nice video                                                                                          	12:26:54.631863	2022-08-10	0
-19	42	20	Nice video                                                                                          	12:27:25.668196	2022-08-10	0
-20	43	21	Nice video                                                                                          	12:27:57.538574	2022-08-10	0
-21	44	22	Nice video                                                                                          	12:28:26.72058	2022-08-10	0
-22	49	23	Nice video                                                                                          	12:29:22.335725	2022-08-10	0
-23	50	24	Nice video                                                                                          	12:29:47.419028	2022-08-10	0
-24	54	25	Good video                                                                                          	12:30:15.696765	2022-08-10	0
-25	55	26	Good video                                                                                          	12:30:40.976242	2022-08-10	0
-26	59	27	Good video                                                                                          	12:31:10.940604	2022-08-10	0
-27	60	28	Good video                                                                                          	12:31:59.66335	2022-08-10	0
-28	61	29	Good video                                                                                          	12:32:25.566055	2022-08-10	0
-29	63	30	Nice video                                                                                          	12:33:19.474026	2022-08-10	0
-30	64	31	Nice video                                                                                          	12:33:49.460981	2022-08-10	0
-31	67	32	Good video                                                                                          	12:34:23.553031	2022-08-10	0
-32	69	33	Nice video                                                                                          	12:36:07.030046	2022-08-10	0
-33	70	34	Good video                                                                                          	12:36:54.322879	2022-08-10	0
-34	72	35	Nice video                                                                                          	12:37:31.458354	2022-08-10	0
 \.
 
 
@@ -3647,66 +3677,66 @@ COPY public.teachers (user_id, specilaity, date_of_join) FROM stdin;
 --
 
 COPY public.users (user_id, full_name, security_key, date_of_birth, bio, email, address, user_type, gender, credit_card_id, bank_id) FROM stdin;
-2	Marisol Hicks	3AikoA0u                        	1997-11-04	                                                                                                    	marisol445@gmail.com	null	STUDENT   	f	2	1
-3	Jose Sylvester	9fG6&M^)                        	2000-03-06	                                                                                                    	jose7038@gmail.com	null	STUDENT   	m	3	3
-4	William Adams	EWqqZ2JB                        	1993-11-21	                                                                                                    	william2284@gmail.com	null	STUDENT   	m	4	2
-5	Michelle Kimmell	#$^*MEfT                        	1992-05-18	                                                                                                    	michelle2802@gmail.com	null	STUDENT   	f	5	2
-6	Ashley Langston	ES3wGahg                        	1980-03-27	                                                                                                    	ashley932@gmail.com	null	STUDENT   	f	6	2
-7	Allyson Moschetti	eHzxS3kI                        	1997-12-05	                                                                                                    	allyson3467@gmail.com	null	STUDENT   	f	7	2
-8	Dolores White	nc!zhv16                        	1994-09-24	                                                                                                    	dolores2369@gmail.com	null	STUDENT   	f	8	1
-9	Dorothy Alford	ycWB7umn                        	1998-01-04	                                                                                                    	dorothy1775@gmail.com	null	STUDENT   	f	9	1
-10	Beth Smith	(EniNGwX                        	1997-09-18	                                                                                                    	beth3902@gmail.com	null	STUDENT   	f	10	3
-11	Lila Crawford	zanlaT7L                        	1983-10-20	                                                                                                    	lila6053@gmail.com	null	STUDENT   	f	11	3
-12	Devon Steger	rKXI7fF6                        	1991-06-09	                                                                                                    	devon1321@gmail.com	null	STUDENT   	m	12	3
-13	Al Lynch	XZH22#AL                        	1989-07-24	                                                                                                    	al8986@gmail.com	null	STUDENT   	m	13	1
-14	Joi Bellefeuille	*k$^Ckq5                        	1992-11-17	                                                                                                    	joi6193@gmail.com	null	STUDENT   	f	14	1
-15	Kimberly Toler	R*WM9uNg                        	1981-04-06	                                                                                                    	kimberly1991@gmail.com	null	STUDENT   	f	15	1
-16	Tonya Harris	NVR(iOdS                        	1998-03-20	                                                                                                    	tonya6665@gmail.com	null	STUDENT   	f	16	3
-17	Joseph Sharp	G!i^hr&a                        	1993-12-28	                                                                                                    	joseph7068@gmail.com	null	STUDENT   	m	17	2
-18	Carrie Andrew	d)aM42P&                        	1987-09-24	                                                                                                    	carrie7877@gmail.com	null	STUDENT   	f	18	1
-19	Louis Laster	&*nI3!Zl                        	1989-01-12	                                                                                                    	louis9310@gmail.com	null	STUDENT   	m	19	3
-20	Dustin Coppinger	7v)omJZJ                        	1997-11-25	                                                                                                    	dustin8186@gmail.com	null	STUDENT   	m	20	2
-21	Hilario Skrine	5xfFTANs                        	1995-12-05	                                                                                                    	hilario581@gmail.com	null	STUDENT   	m	21	1
-22	Crystal Warnick	neT9zz7N                        	1992-10-03	                                                                                                    	crystal478@gmail.com	null	STUDENT   	f	22	2
-23	Mamie Richmond	#&u%zBrB                        	1991-12-04	                                                                                                    	mamie4456@gmail.com	null	STUDENT   	f	23	1
-24	Bryan Harker	hkBT65*P                        	1984-10-04	                                                                                                    	bryan305@gmail.com	null	STUDENT   	m	24	2
-25	Deborah Kachmarsky	qOzdTXu!                        	1987-06-06	                                                                                                    	deborah8755@gmail.com	null	STUDENT   	f	25	1
-26	Sharon Valcourt	bQsC!@#1                        	1999-03-26	                                                                                                    	sharon6716@gmail.com	null	STUDENT   	f	26	1
-27	Steven Hawkins	(MCn%xOo                        	1992-05-09	                                                                                                    	steven6322@gmail.com	null	STUDENT   	m	27	2
-28	Michael Ellis	5h2SjA0d                        	1988-01-02	                                                                                                    	michael3105@gmail.com	null	STUDENT   	m	28	3
-29	Willie Vieira	OEZkEXlb                        	1985-07-01	                                                                                                    	willie8026@gmail.com	null	STUDENT   	m	29	2
-30	Shari Swartz	ak4sJBoC                        	1982-09-26	                                                                                                    	shari875@gmail.com	null	STUDENT   	f	30	2
-31	Thomas Caraballo	z&sS!sb4                        	1990-01-03	                                                                                                    	thomas476@gmail.com	null	STUDENT   	m	31	2
-32	Sharon Acker	4Q@j#^ym                        	1988-11-26	                                                                                                    	sharon5866@gmail.com	null	STUDENT   	f	32	1
-33	James Thomas	OT@M(ECM                        	1984-08-02	                                                                                                    	james8865@gmail.com	null	STUDENT   	m	33	1
-1	Mary Prezzia	$byEwzo&                        	1986-02-25	                                                                                                    	mary1151@gmail.com	null	STUDENT   	f	1	3
-34	Reginald Contreras	FVqlcK9S                        	1992-07-17	                                                                                                    	reginald5090@gmail.com	null	STUDENT   	m	34	2
-35	Robert Gartin	FTnV)z&E                        	1999-02-15	                                                                                                    	robert2831@gmail.com	null	STUDENT   	m	35	3
-36	Sharon Gamino	yy%CiNR8                        	1999-11-17	                                                                                                    	sharon1938@gmail.com	null	STUDENT   	f	36	2
-37	Cynthia Gonzalez	)jONn8WQ                        	1989-05-05	                                                                                                    	cynthia6438@gmail.com	null	STUDENT   	f	37	1
-38	Brent Clower	VJhE$qb7                        	1998-05-18	                                                                                                    	brent4149@gmail.com	null	STUDENT   	m	38	1
-39	Philip Vanderloo	*wKl%RMo                        	1985-05-13	                                                                                                    	philip6560@gmail.com	null	STUDENT   	m	39	3
-40	Tana Kinloch	T92Sd^aQ                        	1995-05-24	                                                                                                    	tana6370@gmail.com	null	STUDENT   	f	40	1
-41	Maria Summer	eyl8e5T5                        	1981-10-16	                                                                                                    	maria1475@gmail.com	null	STUDENT   	f	41	2
-42	Douglas Mcgowan	6gU#Pj44                        	1992-05-09	                                                                                                    	douglas2320@gmail.com	null	STUDENT   	m	42	2
-43	Noah Jamerson	tRmPPk1a                        	1984-02-25	                                                                                                    	noah2915@gmail.com	null	STUDENT   	m	43	1
-44	Helen Burton	(0JR8z!y                        	1993-03-18	                                                                                                    	helen2377@gmail.com	null	STUDENT   	f	44	2
-45	Crystal Hamby	KqKBEiJ)                        	1986-10-08	                                                                                                    	crystal1815@gmail.com	null	STUDENT   	f	45	1
-46	Glen Basista	(k9&0#wf                        	1997-12-27	                                                                                                    	glen3930@gmail.com	null	STUDENT   	m	46	1
-47	Rodney Wolfe	zYOeuFjF                        	1988-05-10	                                                                                                    	rodney23@gmail.com	null	STUDENT   	m	47	1
-48	Lori Gilmore	atB8Adqc                        	1986-01-07	                                                                                                    	lori8056@gmail.com	null	STUDENT   	f	48	3
-49	Kristina Shriver	Pm$8C^aK                        	1996-11-06	                                                                                                    	kristina8057@gmail.com	null	STUDENT   	f	49	1
-50	William Kish	iqJ5imNi                        	1993-12-07	                                                                                                    	william3749@gmail.com	null	STUDENT   	m	50	3
-51	Martha Marbley	Yo$Cr8kC                        	1986-05-26	                                                                                                    	martha4381@gmail.com	null	TEACHER   	f	51	3
-52	Carolyn Watkins	@y5uDxXQ                        	2000-06-12	                                                                                                    	carolyn8065@gmail.com	null	TEACHER   	f	52	3
-53	Diane Jones	U)WDWBQL                        	1998-06-24	                                                                                                    	diane6212@gmail.com	null	TEACHER   	f	53	3
-54	Helena Nolder	Zs#lxydO                        	1992-11-09	                                                                                                    	helena1754@gmail.com	null	TEACHER   	f	54	1
-55	Mike Mills	dvlDY)*o                        	1985-11-09	                                                                                                    	mike7179@gmail.com	null	TEACHER   	m	55	2
-56	Charles Wiltberger	HHFv9URG                        	1982-09-21	                                                                                                    	charles2480@gmail.com	null	TEACHER   	m	56	1
-57	Henry Depalma	3lrQ!(Zv                        	1993-06-27	                                                                                                    	henry4121@gmail.com	null	TEACHER   	m	57	3
-60	Pamela Pemberton	czQpXFIM                        	1981-02-21	                                                                                                    	pamela4346@gmail.com	null	TEACHER   	f	60	3
-58	Mario Barnett	&egIAT%%                        	1998-02-23	                                                                                                    	mario4755@gmail.com	null	TEACHER   	m	58	3
-59	Hubert Rodriguez	knk(^vpi                        	1988-11-19	                                                                                                    	hubert3151@gmail.com	null	TEACHER   	m	59	3
+2	Marisol Hicks	3AikoA0u                        	1997-11-04	                                                                                                    	marisol445@gmail.com		STUDENT   	f	2	1
+3	Jose Sylvester	9fG6&M^)                        	2000-03-06	                                                                                                    	jose7038@gmail.com		STUDENT   	m	3	3
+4	William Adams	EWqqZ2JB                        	1993-11-21	                                                                                                    	william2284@gmail.com		STUDENT   	m	4	2
+5	Michelle Kimmell	#$^*MEfT                        	1992-05-18	                                                                                                    	michelle2802@gmail.com		STUDENT   	f	5	2
+6	Ashley Langston	ES3wGahg                        	1980-03-27	                                                                                                    	ashley932@gmail.com		STUDENT   	f	6	2
+7	Allyson Moschetti	eHzxS3kI                        	1997-12-05	                                                                                                    	allyson3467@gmail.com		STUDENT   	f	7	2
+8	Dolores White	nc!zhv16                        	1994-09-24	                                                                                                    	dolores2369@gmail.com		STUDENT   	f	8	1
+9	Dorothy Alford	ycWB7umn                        	1998-01-04	                                                                                                    	dorothy1775@gmail.com		STUDENT   	f	9	1
+10	Beth Smith	(EniNGwX                        	1997-09-18	                                                                                                    	beth3902@gmail.com		STUDENT   	f	10	3
+11	Lila Crawford	zanlaT7L                        	1983-10-20	                                                                                                    	lila6053@gmail.com		STUDENT   	f	11	3
+12	Devon Steger	rKXI7fF6                        	1991-06-09	                                                                                                    	devon1321@gmail.com		STUDENT   	m	12	3
+13	Al Lynch	XZH22#AL                        	1989-07-24	                                                                                                    	al8986@gmail.com		STUDENT   	m	13	1
+14	Joi Bellefeuille	*k$^Ckq5                        	1992-11-17	                                                                                                    	joi6193@gmail.com		STUDENT   	f	14	1
+15	Kimberly Toler	R*WM9uNg                        	1981-04-06	                                                                                                    	kimberly1991@gmail.com		STUDENT   	f	15	1
+16	Tonya Harris	NVR(iOdS                        	1998-03-20	                                                                                                    	tonya6665@gmail.com		STUDENT   	f	16	3
+17	Joseph Sharp	G!i^hr&a                        	1993-12-28	                                                                                                    	joseph7068@gmail.com		STUDENT   	m	17	2
+18	Carrie Andrew	d)aM42P&                        	1987-09-24	                                                                                                    	carrie7877@gmail.com		STUDENT   	f	18	1
+19	Louis Laster	&*nI3!Zl                        	1989-01-12	                                                                                                    	louis9310@gmail.com		STUDENT   	m	19	3
+20	Dustin Coppinger	7v)omJZJ                        	1997-11-25	                                                                                                    	dustin8186@gmail.com		STUDENT   	m	20	2
+21	Hilario Skrine	5xfFTANs                        	1995-12-05	                                                                                                    	hilario581@gmail.com		STUDENT   	m	21	1
+22	Crystal Warnick	neT9zz7N                        	1992-10-03	                                                                                                    	crystal478@gmail.com		STUDENT   	f	22	2
+23	Mamie Richmond	#&u%zBrB                        	1991-12-04	                                                                                                    	mamie4456@gmail.com		STUDENT   	f	23	1
+24	Bryan Harker	hkBT65*P                        	1984-10-04	                                                                                                    	bryan305@gmail.com		STUDENT   	m	24	2
+25	Deborah Kachmarsky	qOzdTXu!                        	1987-06-06	                                                                                                    	deborah8755@gmail.com		STUDENT   	f	25	1
+26	Sharon Valcourt	bQsC!@#1                        	1999-03-26	                                                                                                    	sharon6716@gmail.com		STUDENT   	f	26	1
+27	Steven Hawkins	(MCn%xOo                        	1992-05-09	                                                                                                    	steven6322@gmail.com		STUDENT   	m	27	2
+28	Michael Ellis	5h2SjA0d                        	1988-01-02	                                                                                                    	michael3105@gmail.com		STUDENT   	m	28	3
+29	Willie Vieira	OEZkEXlb                        	1985-07-01	                                                                                                    	willie8026@gmail.com		STUDENT   	m	29	2
+30	Shari Swartz	ak4sJBoC                        	1982-09-26	                                                                                                    	shari875@gmail.com		STUDENT   	f	30	2
+31	Thomas Caraballo	z&sS!sb4                        	1990-01-03	                                                                                                    	thomas476@gmail.com		STUDENT   	m	31	2
+32	Sharon Acker	4Q@j#^ym                        	1988-11-26	                                                                                                    	sharon5866@gmail.com		STUDENT   	f	32	1
+33	James Thomas	OT@M(ECM                        	1984-08-02	                                                                                                    	james8865@gmail.com		STUDENT   	m	33	1
+1	Mary Prezzia	$byEwzo&                        	1986-02-25	                                                                                                    	mary1151@gmail.com		STUDENT   	f	1	3
+34	Reginald Contreras	FVqlcK9S                        	1992-07-17	                                                                                                    	reginald5090@gmail.com		STUDENT   	m	34	2
+35	Robert Gartin	FTnV)z&E                        	1999-02-15	                                                                                                    	robert2831@gmail.com		STUDENT   	m	35	3
+36	Sharon Gamino	yy%CiNR8                        	1999-11-17	                                                                                                    	sharon1938@gmail.com		STUDENT   	f	36	2
+37	Cynthia Gonzalez	)jONn8WQ                        	1989-05-05	                                                                                                    	cynthia6438@gmail.com		STUDENT   	f	37	1
+38	Brent Clower	VJhE$qb7                        	1998-05-18	                                                                                                    	brent4149@gmail.com		STUDENT   	m	38	1
+39	Philip Vanderloo	*wKl%RMo                        	1985-05-13	                                                                                                    	philip6560@gmail.com		STUDENT   	m	39	3
+40	Tana Kinloch	T92Sd^aQ                        	1995-05-24	                                                                                                    	tana6370@gmail.com		STUDENT   	f	40	1
+41	Maria Summer	eyl8e5T5                        	1981-10-16	                                                                                                    	maria1475@gmail.com		STUDENT   	f	41	2
+42	Douglas Mcgowan	6gU#Pj44                        	1992-05-09	                                                                                                    	douglas2320@gmail.com		STUDENT   	m	42	2
+43	Noah Jamerson	tRmPPk1a                        	1984-02-25	                                                                                                    	noah2915@gmail.com		STUDENT   	m	43	1
+44	Helen Burton	(0JR8z!y                        	1993-03-18	                                                                                                    	helen2377@gmail.com		STUDENT   	f	44	2
+45	Crystal Hamby	KqKBEiJ)                        	1986-10-08	                                                                                                    	crystal1815@gmail.com		STUDENT   	f	45	1
+46	Glen Basista	(k9&0#wf                        	1997-12-27	                                                                                                    	glen3930@gmail.com		STUDENT   	m	46	1
+47	Rodney Wolfe	zYOeuFjF                        	1988-05-10	                                                                                                    	rodney23@gmail.com		STUDENT   	m	47	1
+48	Lori Gilmore	atB8Adqc                        	1986-01-07	                                                                                                    	lori8056@gmail.com		STUDENT   	f	48	3
+49	Kristina Shriver	Pm$8C^aK                        	1996-11-06	                                                                                                    	kristina8057@gmail.com		STUDENT   	f	49	1
+50	William Kish	iqJ5imNi                        	1993-12-07	                                                                                                    	william3749@gmail.com		STUDENT   	m	50	3
+51	Martha Marbley	Yo$Cr8kC                        	1986-05-26	                                                                                                    	martha4381@gmail.com		TEACHER   	f	51	3
+52	Carolyn Watkins	@y5uDxXQ                        	2000-06-12	                                                                                                    	carolyn8065@gmail.com		TEACHER   	f	52	3
+53	Diane Jones	U)WDWBQL                        	1998-06-24	                                                                                                    	diane6212@gmail.com		TEACHER   	f	53	3
+54	Helena Nolder	Zs#lxydO                        	1992-11-09	                                                                                                    	helena1754@gmail.com		TEACHER   	f	54	1
+55	Mike Mills	dvlDY)*o                        	1985-11-09	                                                                                                    	mike7179@gmail.com		TEACHER   	m	55	2
+56	Charles Wiltberger	HHFv9URG                        	1982-09-21	                                                                                                    	charles2480@gmail.com		TEACHER   	m	56	1
+57	Henry Depalma	3lrQ!(Zv                        	1993-06-27	                                                                                                    	henry4121@gmail.com		TEACHER   	m	57	3
+60	Pamela Pemberton	czQpXFIM                        	1981-02-21	                                                                                                    	pamela4346@gmail.com		TEACHER   	f	60	3
+58	Mario Barnett	&egIAT%%                        	1998-02-23	                                                                                                    	mario4755@gmail.com		TEACHER   	m	58	3
+59	Hubert Rodriguez	knk(^vpi                        	1988-11-19	                                                                                                    	hubert3151@gmail.com		TEACHER   	m	59	3
 \.
 
 
