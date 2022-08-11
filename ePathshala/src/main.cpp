@@ -47,6 +47,10 @@ int main()
         {
             GetCourseDetails(request, response, dbClient);
         }
+        else if(request["type"].asString() == "get-course-contents")
+        {
+            GetCourseContents(request, response, dbClient);
+        }
 
         std::clog << "Sending response" << std::endl;
 

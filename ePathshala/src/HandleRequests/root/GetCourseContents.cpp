@@ -1,6 +1,6 @@
 #include "GetCourseContents.h"
 
-void GetCourseContents(Json::Value &requestJson, Json::Value &response, drogon::orm::DbClient &dbClient)
+void GetCourseContents(Json::Value &request, Json::Value &response, drogon::orm::DbClient &dbClient)
 {
     std::clog << "Get \"course-contents\" request" << std::endl;
 
@@ -9,7 +9,7 @@ void GetCourseContents(Json::Value &requestJson, Json::Value &response, drogon::
 
     queryStream << inputFileStream.rdbuf();
 
-    std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), requestJson["course_id"].asInt64());
+    std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), request["course_id"].asInt64());
 
     resultFuture.wait();
 
@@ -19,13 +19,12 @@ void GetCourseContents(Json::Value &requestJson, Json::Value &response, drogon::
     {
         Json::Value content;
 
-        content["content_id"] = result[i]["CONTENT_ID"].as<Json::Int64>();
-        content["title"] = result[i]["TITLE"].as<Json::String>();
-        content["description"] = result[i]["DESCRIPTION"].as<Json::String>();
-        content["rate"] = result[i]["RATE"].as<double>();
-        content["date_of_creation"] = result[i]["DATE_OF_CREATION"].as<Json::String>();
-        content["content_type"] = result[i]["CONTENT_TYPE"].as<Json::String>();
-        content["view_count"] = result[i]["VIEW_COUNT"].as<Json::Int64>();
+        for(size_t j = 0; j < request["select"].size(); ++j)
+        {
+            Json::String defaultValue = "null";
+            std::string column = request["select"].get(j, defaultValue).asString();
+            content[column] = result[i][column].as<Json::String>();
+        }
 
         response["contents"].append(content);
     }
