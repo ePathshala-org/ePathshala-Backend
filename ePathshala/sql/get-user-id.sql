@@ -1,0 +1,1 @@
+SELECT * FROM GET_USER_ID($1, $2, $3)

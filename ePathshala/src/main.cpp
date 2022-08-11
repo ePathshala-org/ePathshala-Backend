@@ -25,78 +25,18 @@ int main()
     [&dbClient](const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback)
     {
         std::shared_ptr<Json::Value> reqJsonPtr = req.get()->getJsonObject();
-        Json::Value &requestJson = *reqJsonPtr.get();
+        Json::Value &request = *reqJsonPtr.get();
         Json::Value response;
 
-        std::clog << "type: " << requestJson["type"].asString() << std::endl;
+        std::clog << "type: " << request["type"].asString() << std::endl;
 
-        if(requestJson["type"].asString() == "init-not-logged-in")
+        if(request["type"].asString() == "get-user-details")
         {
-            InitNotLoggedIn(requestJson, response, dbClient);
+            GetUserDetails(request, response, dbClient);
         }
-        else if(requestJson["type"].asString() == "login")
+        else if(request["type"].asString() == "get-user-id")
         {
-            Login(requestJson, response, dbClient);
-        }
-        else if(requestJson["type"].asString() == "get-student-details-home")
-        {
-            GetStudentDetailsHome(requestJson, response, dbClient);
-        }
-        else if(requestJson["type"].asString() == "get-teacher-details-home")
-        {
-            GetTeacherDetailsHome(requestJson, response, dbClient);
-        }
-        else if(requestJson["type"].asString() == "get-teacher-courses")
-        {
-            GetTeacherCourses(requestJson, response, dbClient);
-        }
-        else if(requestJson["type"].asString() == "search")
-        {
-            Search(requestJson, response, dbClient);
-        }
-        else if(requestJson["type"].asString() == "get-student-courses")
-        {
-            GetStudentCourses(requestJson, response, dbClient);
-        }
-        else if(requestJson["type"].asString() == "get-student-all-courses")
-        {
-            GetStudentAllCourses(requestJson, response, dbClient);
-        }
-        else if(requestJson["type"].asString() == "create-new-account")
-        {
-            CreateNewAccount(requestJson, response, dbClient);
-        }
-        else if(requestJson["type"].asString() == "get-course-contents")
-        {
-            GetCourseContents(requestJson, response, dbClient);
-        }
-        else if(requestJson["type"].asString() == "get-student-details")
-        {
-            GetStudentDetails(requestJson, response, dbClient);
-        }
-        else if(requestJson["type"].asString() == "get-all-courses")
-        {
-            GetAllCourses(requestJson, response, dbClient);
-        }
-        else if(requestJson["type"].asString() == "get-course-details")
-        {
-            GetCourseDetails(requestJson, response, dbClient);
-        }
-        else if(requestJson["type"].asString() == "get-content-details")
-        {
-            GetContentDetails(requestJson, response, dbClient);
-        }
-        else if(requestJson["type"].asString() == "get-comments")
-        {
-            GetComments(requestJson, response, dbClient);
-        }
-        else if(requestJson["type"].asString() == "get-user-details")
-        {
-            GetUserDetails(requestJson, response, dbClient);
-        }
-        else if(requestJson["type"].asString() == "get-courses-popular")
-        {
-            GetCoursesPopular(requestJson, response, dbClient);
+            GetUserId(request, response, dbClient);
         }
 
         std::clog << "Sending response" << std::endl;
