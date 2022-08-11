@@ -15,6 +15,7 @@ int main()
 
     drogon::orm::DbClientPtr dbClientPtr = GetDbClientPtr(initData);
     drogon::orm::DbClient &dbClient = *dbClientPtr.get();
+
 	drogon::HttpAppFramework &httpAppFramework = drogon::app().addListener(initData["ip"].asString(), initData["port"].asInt());
 
 	httpAppFramework.setThreadNum(16);
@@ -41,6 +42,10 @@ int main()
         else if(request["type"].asString() == "get-courses-popular")
         {
             GetCoursesPopular(request, response, dbClient);
+        }
+        else if(request["type"].asString() == "get-course-details")
+        {
+            GetCourseDetails(request, response, dbClient);
         }
 
         std::clog << "Sending response" << std::endl;
