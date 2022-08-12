@@ -17,135 +17,172 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- Name: course_rate_trigger(); Type: FUNCTION; Schema: public; Owner: epathshala
+-- Name: get_new_user_id(); Type: FUNCTION; Schema: public; Owner: epathshala
 --
 
-CREATE FUNCTION public.course_rate_trigger() RETURNS trigger
+CREATE FUNCTION public.get_new_user_id() RETURNS bigint
     LANGUAGE plpgsql
     AS $$
 DECLARE
-	NEW_AVERAGE NUMERIC;
-	UPDATED_COURSE_ID BIGINT;
+	MAX_USER_ID BIGINT;
+	NEW_USER_ID BIGINT;
 BEGIN
-	UPDATED_COURSE_ID = NEW.COURSE_ID;
-	IF UPDATED_COURSE_ID IS NULL THEN
-		UPDATED_COURSE_ID = OLD.COURSE_ID;
-	END IF;
-	SELECT AVG(RATE) INTO NEW_AVERAGE
-	FROM CONTENTS
-	WHERE COURSE_ID = UPDATED_COURSE_ID;
-	UPDATE COURSES
-	SET RATE = NEW_AVERAGE
-	WHERE COURSE_ID = UPDATED_COURSE_ID;
-END;
-$$;
-
-
-ALTER FUNCTION public.course_rate_trigger() OWNER TO epathshala;
-
---
--- Name: get_courses(character varying[]); Type: FUNCTION; Schema: public; Owner: epathshala
---
-
-CREATE FUNCTION public.get_courses(param_order character varying[]) RETURNS TABLE(course_id bigint, title character varying, description text, date_of_creation date, price integer, creator_id bigint, creator_name character varying, enroll_count bigint)
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-	ORDER_QUERY VARCHAR := '';
-	QUERY_STRING VARCHAR := 'SELECT COURSES.COURSE_ID AS COURSE_ID, TITLE, TRIM(DESCRIPTION) AS DESCRIPTION, DATE_OF_CREATION, PRICE, CREATOR_ID, FULL_NAME AS CREATOR_NAME, COUNT(USERS.USER_ID) AS ENROLL_COUNT FROM COURSES JOIN ENROLLED_COURSES ON(COURSES.COURSE_ID = ENROLLED_COURSES.COURSE_ID) JOIN USERS ON(COURSES.CREATOR_ID = USERS.USER_ID) GROUP BY COURSES.COURSE_ID, TITLE, DESCRIPTION, DATE_OF_CREATION, PRICE, CREATOR_ID, CREATOR_NAME ';
-BEGIN
-	IF ARRAY_LENGTH(PARAM_ORDER, 1) > 0 THEN
-		ORDER_QUERY := 'ORDER BY';
-	END IF;
-	FOR I IN 1..ARRAY_LENGTH(PARAM_ORDER, 1) LOOP
-		IF I > 1 THEN
-			ORDER_QUERY := CONCAT(ORDER_QUERY, ', ', PARAM_ORDER[I][1], ' ', PARAM_ORDER[I][2]);
-		ELSE
-			ORDER_QUERY := CONCAT(ORDER_QUERY, ' ', PARAM_ORDER[I][1], ' ', PARAM_ORDER[I][2]);
-		END IF;
-	END LOOP;
-	QUERY_STRING := CONCAT(QUERY_STRING, ORDER_QUERY);
-	RETURN QUERY EXECUTE QUERY_STRING;
-END;
-$$;
-
-
-ALTER FUNCTION public.get_courses(param_order character varying[]) OWNER TO epathshala;
-
---
--- Name: get_user_id(character varying, character varying, boolean); Type: FUNCTION; Schema: public; Owner: epathshala
---
-
-CREATE FUNCTION public.get_user_id(param_email character varying, param_password character varying, param_student boolean) RETURNS bigint
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-	RETURN_USER_ID BIGINT;
-BEGIN
-	IF PARAM_STUDENT THEN
-		SELECT USERS.USER_ID INTO RETURN_USER_ID
-		FROM USERS
-		JOIN STUDENTS
-		ON (USERS.USER_ID = STUDENTS.USER_ID)
-		WHERE EMAIL = PARAM_EMAIL AND SECURITY_KEY = PARAM_PASSWORD;
+	SELECT MAX(USER_ID) INTO MAX_USER_ID
+	FROM USERS;
+	IF MAX_USER_ID IS NULL THEN
+		RETURN 1;
 	ELSE
-		SELECT USERS.USER_ID INTO RETURN_USER_ID
-		FROM USERS
-		JOIN TEACHERS
-		ON (USERS.USER_ID = TEACHERS.USER_ID)
-		WHERE EMAIL = PARAM_EMAIL AND SECURITY_KEY = PARAM_PASSWORD;
+		FOR I IN 1..MAX_USER_ID LOOP
+			SELECT USER_ID INTO NEW_USER_ID
+			FROM USERS
+			WHERE USER_ID = I;
+			IF NEW_USER_ID IS NULL THEN
+				RETURN I;
+			END IF;
+		END LOOP;
+		RETURN MAX_USER_ID + 1;
 	END IF;
-	IF RETURN_USER_ID IS NULL THEN
-		RETURN_USER_ID := 0;
-    END IF;
-	RETURN RETURN_USER_ID;
 END;
 $$;
 
 
-ALTER FUNCTION public.get_user_id(param_email character varying, param_password character varying, param_student boolean) OWNER TO epathshala;
+ALTER FUNCTION public.get_new_user_id() OWNER TO epathshala;
 
 --
--- Name: random_in_range_inclusive(numeric, numeric); Type: FUNCTION; Schema: public; Owner: epathshala
+-- Name: insert_user(character varying, character varying, character varying, integer, integer, integer, character varying, character varying); Type: FUNCTION; Schema: public; Owner: epathshala
 --
 
-CREATE FUNCTION public.random_in_range_inclusive(param_start numeric, param_end numeric) RETURNS numeric
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-	RETURN RANDOM() * (PARAM_END - PARAM_START) + PARAM_START;
-END;
-$$;
-
-
-ALTER FUNCTION public.random_in_range_inclusive(param_start numeric, param_end numeric) OWNER TO epathshala;
-
---
--- Name: teacher_rate_trigger(); Type: FUNCTION; Schema: public; Owner: epathshala
---
-
-CREATE FUNCTION public.teacher_rate_trigger() RETURNS trigger
+CREATE FUNCTION public.insert_user(param_full_name character varying, param_email character varying, param_password character varying, param_day integer, param_month integer, param_year integer, param_user_type character varying, param_gender character varying) RETURNS integer
     LANGUAGE plpgsql
     AS $$
 DECLARE
-	NEW_AVERAGE NUMERIC;
-	UPDATED_USER_ID BIGINT;
+	NEW_USER_ID BIGINT;
 BEGIN
-	UPDATED_USER_ID = NEW.CREATOR_ID;
-	IF UPDATED_USER_ID IS NULL THEN
-		UPDATED_USER_ID = OLD.CREATOR_ID;
+	IF LENGTH(PARAM_FULL_NAME) = 0 THEN
+		RETURN 1; --EMPTY NAME ERROR
 	END IF;
-	SELECT AVG(RATE) INTO NEW_AVERAGE
-	FROM COURSES
-	WHERE CREATOR_ID = UPDATED_USER_ID;
-	UPDATE TEACHERS
-	SET RATE = NEW_AVERAGE
-	WHERE USER_ID = UPDATED_USER_ID;
+	IF LENGTH(PARAM_EMAIL) = 0 THEN
+		RETURN 2; --EMPTY EMAIL ERROR
+	END IF;
+	IF PARAM_EMAIL NOT LIKE '%_@_%.___' THEN
+		RETURN 3; --INVALID EMAIL ERROR
+	END IF;
+	IF LENGTH(PARAM_PASSWORD) < 8 THEN
+		RETURN 4; --PASSWORD TOO SHORT ERROR
+	END IF;
+	IF LENGTH(PARAM_PASSWORD) > 32 THEN
+		RETURN 5; --PASSWORD TOO LONG ERROR
+	END IF;
+	IF NOT IS_VALID_DATE(PARAM_DAY, PARAM_MONTH, PARAM_YEAR) THEN
+		RETURN 6; --INVALID DATE ERROR
+	END IF;
+	SELECT USERS.USER_ID INTO NEW_USER_ID
+	FROM USERS
+	JOIN STUDENTS
+	ON(USERS.USER_ID = STUDENTS.USER_ID)
+	WHERE EMAIL = PARAM_EMAIL;
+	IF NEW_USER_ID IS NOT NULL THEN
+		RETURN 7; --STUDENT ALREADY PRESENT
+	END IF;
+	SELECT USERS.USER_ID INTO NEW_USER_ID
+	FROM USERS
+	JOIN TEACHERS
+	ON(USERS.USER_ID = TEACHERS.USER_ID)
+	WHERE EMAIL = PARAM_EMAIL;
+	IF NEW_USER_ID IS NOT NULL THEN
+		RETURN 8; --TEACHER ALREADY PRESENT
+	END IF;
+	NEW_USER_ID = GET_NEW_USER_ID();
+	INSERT INTO USERS
+	(USER_ID, FULL_NAME, EMAIL, SECURITY_KEY, USER_TYPE, GENDER)
+	VALUES(NEW_USER_ID, PARAM_FULL_NAME, PARAM_EMAIL, PARAM_PASSWORD, PARAM_USER_TYPE, PARAM_GENDER);
+	RETURN 0; --SUCCESS
 END;
 $$;
 
 
-ALTER FUNCTION public.teacher_rate_trigger() OWNER TO epathshala;
+ALTER FUNCTION public.insert_user(param_full_name character varying, param_email character varying, param_password character varying, param_day integer, param_month integer, param_year integer, param_user_type character varying, param_gender character varying) OWNER TO epathshala;
+
+--
+-- Name: insert_user_trigger(); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.insert_user_trigger() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+BEGIN
+	IF NEW.USER_TYPE = 'STUDENT' THEN
+		INSERT INTO STUDENTS
+		(USER_ID)
+		VALUES (NEW.USER_ID);
+	ELSE
+		INSERT INTO TEACHERS
+		(USER_ID)
+		VALUES (NEW.USER_ID);
+	END IF;
+	RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.insert_user_trigger() OWNER TO epathshala;
+
+--
+-- Name: is_leap_year(integer); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.is_leap_year(param_year integer) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN ((PARAM_YEAR % 4 = 0 AND PARAM_YEAR % 1000 != 0) OR PARAM_YEAR % 400 = 0);
+END;
+$$;
+
+
+ALTER FUNCTION public.is_leap_year(param_year integer) OWNER TO epathshala;
+
+--
+-- Name: is_valid_date(integer, integer, integer); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.is_valid_date(param_day integer, param_month integer, param_year integer) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+BEGIN
+	IF PARAM_MONTH = 2 THEN
+		IF IS_LEAP_YEAR(PARAM_YEAR) THEN
+			RETURN PARAM_DAY <= 29;
+		ELSE
+			RETURN PARAM_DAY <= 28;
+		END IF;
+	END IF;
+	IF PARAM_MONTH IN (4, 6, 9, 11) THEN
+		RETURN PARAM_DAY <= 30;
+	END IF;
+	RETURN TRUE;
+END;
+$$;
+
+
+ALTER FUNCTION public.is_valid_date(param_day integer, param_month integer, param_year integer) OWNER TO epathshala;
+
+--
+-- Name: print(character varying); Type: PROCEDURE; Schema: public; Owner: epathshala
+--
+
+CREATE PROCEDURE public.print(IN to_print character varying)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RAISE NOTICE '%', TO_PRINT;
+END;
+$$;
+
+
+ALTER PROCEDURE public.print(IN to_print character varying) OWNER TO epathshala;
 
 SET default_tablespace = '';
 
@@ -378,9 +415,9 @@ ALTER TABLE public.quiz_grades OWNER TO epathshala;
 
 CREATE TABLE public.students (
     user_id bigint NOT NULL,
-    interests character varying DEFAULT ''::character varying,
     date_of_join date DEFAULT CURRENT_DATE NOT NULL,
     rank_point integer DEFAULT 0,
+    interests character varying[] DEFAULT ARRAY[]::character varying[],
     CONSTRAINT students_rank_point_check CHECK ((rank_point >= 0))
 );
 
@@ -428,8 +465,8 @@ ALTER SEQUENCE public.tags_tag_id_seq OWNED BY public.tags.tag_id;
 
 CREATE TABLE public.teachers (
     user_id bigint NOT NULL,
-    specilaity character varying DEFAULT ''::character varying,
-    date_of_join date DEFAULT CURRENT_DATE NOT NULL
+    date_of_join date DEFAULT CURRENT_DATE NOT NULL,
+    specialities character varying[] DEFAULT ARRAY[]::character varying[]
 );
 
 
@@ -3656,57 +3693,57 @@ COPY public.quiz_grades (user_id, content_id, grade) FROM stdin;
 -- Data for Name: students; Type: TABLE DATA; Schema: public; Owner: epathshala
 --
 
-COPY public.students (user_id, interests, date_of_join, rank_point) FROM stdin;
-1	null	2020-01-08	0
-2	null	2020-05-16	0
-3	null	2021-07-15	0
-4	null	2021-12-14	0
-5	null	2021-06-28	0
-6	null	2021-04-06	0
-7	null	2020-03-15	0
-8	null	2021-09-05	0
-9	null	2021-03-02	0
-10	null	2021-05-04	0
-11	null	2021-01-04	0
-12	null	2020-10-16	0
-13	null	2020-03-08	0
-14	null	2021-02-15	0
-15	null	2021-07-03	0
-16	null	2020-02-16	0
-17	null	2020-01-26	0
-18	null	2021-03-23	0
-19	null	2021-04-09	0
-20	null	2020-02-17	0
-21	null	2020-02-11	0
-22	null	2020-04-21	0
-23	null	2021-02-16	0
-24	null	2020-08-01	0
-25	null	2020-12-15	0
-26	null	2021-07-20	0
-27	null	2021-01-01	0
-28	null	2020-04-27	0
-29	null	2020-12-13	0
-30	null	2021-08-25	0
-31	null	2020-05-17	0
-32	null	2020-05-15	0
-33	null	2021-12-22	0
-34	null	2021-04-28	0
-35	null	2021-03-15	0
-36	null	2020-09-04	0
-37	null	2021-01-28	0
-38	null	2021-11-05	0
-39	null	2020-11-13	0
-40	null	2020-05-26	0
-41	null	2020-08-16	0
-42	null	2021-05-02	0
-43	null	2021-03-03	0
-44	null	2021-12-07	0
-45	null	2020-10-06	0
-46	null	2021-08-20	0
-47	null	2021-09-15	0
-48	null	2020-11-28	0
-49	null	2020-07-11	0
-50	null	2021-07-20	0
+COPY public.students (user_id, date_of_join, rank_point, interests) FROM stdin;
+1	2020-01-08	0	\N
+2	2020-05-16	0	\N
+3	2021-07-15	0	\N
+4	2021-12-14	0	\N
+5	2021-06-28	0	\N
+6	2021-04-06	0	\N
+7	2020-03-15	0	\N
+8	2021-09-05	0	\N
+9	2021-03-02	0	\N
+10	2021-05-04	0	\N
+11	2021-01-04	0	\N
+12	2020-10-16	0	\N
+13	2020-03-08	0	\N
+14	2021-02-15	0	\N
+15	2021-07-03	0	\N
+16	2020-02-16	0	\N
+17	2020-01-26	0	\N
+18	2021-03-23	0	\N
+19	2021-04-09	0	\N
+20	2020-02-17	0	\N
+21	2020-02-11	0	\N
+22	2020-04-21	0	\N
+23	2021-02-16	0	\N
+24	2020-08-01	0	\N
+25	2020-12-15	0	\N
+26	2021-07-20	0	\N
+27	2021-01-01	0	\N
+28	2020-04-27	0	\N
+29	2020-12-13	0	\N
+30	2021-08-25	0	\N
+31	2020-05-17	0	\N
+32	2020-05-15	0	\N
+33	2021-12-22	0	\N
+34	2021-04-28	0	\N
+35	2021-03-15	0	\N
+36	2020-09-04	0	\N
+37	2021-01-28	0	\N
+38	2021-11-05	0	\N
+39	2020-11-13	0	\N
+40	2020-05-26	0	\N
+41	2020-08-16	0	\N
+42	2021-05-02	0	\N
+43	2021-03-03	0	\N
+44	2021-12-07	0	\N
+45	2020-10-06	0	\N
+46	2021-08-20	0	\N
+47	2021-09-15	0	\N
+48	2020-11-28	0	\N
+49	2020-07-11	0	\N
+50	2021-07-20	0	\N
 \.
 
 
@@ -3727,17 +3764,17 @@ COPY public.tags (tag_id, tag_name) FROM stdin;
 -- Data for Name: teachers; Type: TABLE DATA; Schema: public; Owner: epathshala
 --
 
-COPY public.teachers (user_id, specilaity, date_of_join) FROM stdin;
-51	math	2019-10-19
-52	math	2019-10-01
-53	math	2020-10-15
-54	math	2020-03-11
-55	math	2020-03-12
-56	math	2020-05-08
-57	computer	2020-10-16
-58	economics	2020-11-13
-59	computer	2021-03-13
-60	economics	2021-05-15
+COPY public.teachers (user_id, date_of_join, specialities) FROM stdin;
+51	2019-10-19	{MATH}
+52	2019-10-01	{MATH}
+53	2020-10-15	{MATH}
+54	2020-03-11	{STATISTICS}
+55	2020-03-12	{MATH}
+56	2020-05-08	{STATISTICS}
+57	2020-10-16	{COMPUTER,ECONOMICS}
+58	2020-11-13	{ECONOMICS}
+59	2021-03-13	{COMPUTER,MATH}
+60	2021-05-15	{ECONOMICS,LITERATURE}
 \.
 
 
@@ -3969,6 +4006,13 @@ ALTER TABLE ONLY public.users
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (user_id);
+
+
+--
+-- Name: users insert_user_trigger; Type: TRIGGER; Schema: public; Owner: epathshala
+--
+
+CREATE TRIGGER insert_user_trigger AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION public.insert_user_trigger();
 
 
 --
