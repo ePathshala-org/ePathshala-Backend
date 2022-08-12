@@ -59,6 +59,10 @@ int main()
         {
             GetComments(request, response, dbClient);
         }
+        else if(request["type"].asString() == "get-student-details")
+        {
+            GetStudentDetails(request, response, dbClient);
+        }
 
         std::clog << "Sending response" << std::endl;
 

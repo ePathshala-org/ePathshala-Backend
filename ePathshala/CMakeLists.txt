@@ -16,6 +16,7 @@ add_executable(ePathshala
     "src/HandleRequests/root/GetCourseDetails.cpp"
     "src/HandleRequests/root/GetContentDetails.cpp"
     "src/HandleRequests/root/GetComments.cpp"
+    "src/HandleRequests/root/GetStudentDetails.cpp"
 )
 
 find_package(Drogon REQUIRED)

@@ -3,14 +3,11 @@ SELECT
     FULL_NAME, 
     SECURITY_KEY, 
     DATE_OF_BIRTH, 
-    BIO, 
+    TRIM(BIO) AS BIO, 
     EMAIL, 
-    ADDRESS,
     USER_TYPE, 
-    GENDER, 
     CREDIT_CARD_ID, 
     BANK_ID, 
-    INTERESTS, 
     DATE_OF_JOIN, 
     RANK_POINT 
 FROM USERS
