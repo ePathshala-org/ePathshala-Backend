@@ -6,3 +6,4 @@
 #include "root/GetCourseDetails.h"
 #include "root/GetCourseContents.h"
 #include "root/GetContentDetails.h"
+#include "root/GetComments.h"

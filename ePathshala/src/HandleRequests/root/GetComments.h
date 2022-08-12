@@ -5,4 +5,4 @@
 #include <drogon/drogon.h>
 #include <drogon/orm/DbClient.h>
 
-void GetComments(Json::Value &requestJson, Json::Value &response, drogon::orm::DbClient &dbClient);
+void GetComments(Json::Value &request, Json::Value &response, drogon::orm::DbClient &dbClient);

@@ -55,6 +55,10 @@ int main()
         {
             GetContentDetails(request, response, dbClient);
         }
+        else if(request["type"].asString() == "get-comments")
+        {
+            GetComments(request, response, dbClient);
+        }
 
         std::clog << "Sending response" << std::endl;
 
