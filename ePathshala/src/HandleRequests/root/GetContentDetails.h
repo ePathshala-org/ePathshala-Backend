@@ -5,4 +5,4 @@
 #include <drogon/drogon.h>
 #include <drogon/orm/DbClient.h>
 
-void GetContentDetails(Json::Value &requestJson, Json::Value &response, drogon::orm::DbClient &dbClient);
+void GetContentDetails(Json::Value &request, Json::Value &response, drogon::orm::DbClient &dbClient);
