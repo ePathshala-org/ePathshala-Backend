@@ -8,3 +8,4 @@
 #include "root/GetContentDetails.h"
 #include "root/GetComments.h"
 #include "root/GetStudentDetails.h"
+#include "root/GetCoursesStudent.h"

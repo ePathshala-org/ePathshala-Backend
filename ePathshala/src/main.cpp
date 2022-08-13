@@ -63,6 +63,10 @@ int main()
         {
             GetStudentDetails(request, response, dbClient);
         }
+        else if(request["type"].asString() == "get-courses-student")
+        {
+            GetCoursesStudent(request, response, dbClient);
+        }
 
         std::clog << "Sending response" << std::endl;
 
