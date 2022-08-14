@@ -16,7 +16,7 @@ void CheckUserEnrolled(Json::Value &request, Json::Value &response, drogon::orm:
 
     if(result.size())
     {
-        response["ENROLLED"] = true;
+        response["ENROLLED"] = result[0]["CHECK_STUDENT_ENROLLED"].as<bool>();
     }
     else
     {

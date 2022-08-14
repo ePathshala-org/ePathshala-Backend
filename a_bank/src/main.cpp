@@ -10,8 +10,10 @@ int main()
 	httpAppFramework.setThreadNum(16);
 
 	httpAppFramework.registerHandler("/",
-    [](const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback)
+    [](const drogon::HttpRequestPtr &httpRequestPtr, std::function<void(const drogon::HttpResponsePtr &)> &&callback)
     {
+        std::clog << httpRequestPtr->getBody() << std::endl;
+
         drogon::HttpResponsePtr httpResponsePtr = drogon::HttpResponse::newHttpResponse();
 
         httpResponsePtr->setBody("Hehe");

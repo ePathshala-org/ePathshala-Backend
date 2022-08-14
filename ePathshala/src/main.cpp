@@ -25,7 +25,7 @@ int main()
 	httpAppFramework.registerHandler("/",
     [&dbClient](const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback)
     {
-        std::shared_ptr<Json::Value> reqJsonPtr = req.get()->getJsonObject();
+        std::shared_ptr<Json::Value> reqJsonPtr = req->getJsonObject();
         Json::Value &request = *reqJsonPtr.get();
         Json::Value response;
 
