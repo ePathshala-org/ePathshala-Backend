@@ -96,8 +96,16 @@ COPY public.clients (client_id, security_key, credit) FROM stdin;
 49	12345678	100000
 54	12345678	100000
 56	12345678	100000
-2	12345678	99000
+2	12345678	99300
 \.
+
+
+--
+-- Name: clients clients_pkey; Type: CONSTRAINT; Schema: public; Owner: a_bank
+--
+
+ALTER TABLE ONLY public.clients
+    ADD CONSTRAINT clients_pkey PRIMARY KEY (client_id);
 
 
 --
