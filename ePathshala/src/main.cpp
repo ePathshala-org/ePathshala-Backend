@@ -75,6 +75,10 @@ int main()
         {
             CheckUserEnrolled(request, response, dbClient);
         }
+        else if(request["type"].asString() == "buy-course")
+        {
+            BuyCourse(request, response, dbClient);
+        }
 
         std::clog << "Sending response" << std::endl;
 

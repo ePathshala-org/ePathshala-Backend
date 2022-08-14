@@ -41,6 +41,23 @@ $$;
 ALTER FUNCTION public.check_student_enrolled(param_user_id bigint, param_course_id bigint) OWNER TO epathshala;
 
 --
+-- Name: enroll_student(bigint, bigint); Type: PROCEDURE; Schema: public; Owner: epathshala
+--
+
+CREATE PROCEDURE public.enroll_student(IN param_student_id bigint, IN param_course_id bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	INSERT INTO ENROLLED_COURSES
+	(USER_ID, COURSE_ID)
+	VALUES(PARAM_STUDENT_ID, PARAM_COURSE_ID);
+END;
+$$;
+
+
+ALTER PROCEDURE public.enroll_student(IN param_student_id bigint, IN param_course_id bigint) OWNER TO epathshala;
+
+--
 -- Name: get_new_user_id(); Type: FUNCTION; Schema: public; Owner: epathshala
 --
 
@@ -192,6 +209,28 @@ $$;
 
 
 ALTER FUNCTION public.is_valid_date(param_day integer, param_month integer, param_year integer) OWNER TO epathshala;
+
+--
+-- Name: pay_course_teacher_credit(bigint, integer); Type: PROCEDURE; Schema: public; Owner: epathshala
+--
+
+CREATE PROCEDURE public.pay_course_teacher_credit(IN param_course_id bigint, IN param_amount integer)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	COURSE_TEACHER_ID BIGINT;
+BEGIN
+	SELECT CREATOR_ID INTO COURSE_TEACHER_ID
+	FROM COURSES
+	WHERE COURSE_ID = PARAM_COURSE_ID;
+	UPDATE TEACHERS
+	SET CREDIT = CREDIT + PARAM_AMOUNT
+	WHERE USER_ID = COURSE_TEACHER_ID;
+END;
+$$;
+
+
+ALTER PROCEDURE public.pay_course_teacher_credit(IN param_course_id bigint, IN param_amount integer) OWNER TO epathshala;
 
 --
 -- Name: print(character varying); Type: PROCEDURE; Schema: public; Owner: epathshala
@@ -360,7 +399,7 @@ ALTER TABLE public.courses OWNER TO epathshala;
 CREATE TABLE public.enrolled_courses (
     user_id bigint NOT NULL,
     course_id bigint NOT NULL,
-    date_of_join date NOT NULL
+    date_of_join date DEFAULT CURRENT_DATE NOT NULL
 );
 
 
@@ -470,7 +509,9 @@ ALTER TABLE public.teacher_specialities OWNER TO epathshala;
 
 CREATE TABLE public.teachers (
     user_id bigint NOT NULL,
-    date_of_join date DEFAULT CURRENT_DATE NOT NULL
+    date_of_join date DEFAULT CURRENT_DATE NOT NULL,
+    credit integer DEFAULT 0,
+    CONSTRAINT teachers_credit_check CHECK ((credit >= 0))
 );
 
 
@@ -3718,17 +3759,17 @@ COPY public.teacher_specialities (teacher_id, speciality) FROM stdin;
 -- Data for Name: teachers; Type: TABLE DATA; Schema: public; Owner: epathshala
 --
 
-COPY public.teachers (user_id, date_of_join) FROM stdin;
-51	2019-10-19
-52	2019-10-01
-53	2020-10-15
-54	2020-03-11
-55	2020-03-12
-56	2020-05-08
-57	2020-10-16
-58	2020-11-13
-59	2021-03-13
-60	2021-05-15
+COPY public.teachers (user_id, date_of_join, credit) FROM stdin;
+52	2019-10-01	0
+53	2020-10-15	0
+54	2020-03-11	0
+55	2020-03-12	0
+56	2020-05-08	0
+57	2020-10-16	0
+58	2020-11-13	0
+59	2021-03-13	0
+60	2021-05-15	0
+51	2019-10-19	1000
 \.
 
 

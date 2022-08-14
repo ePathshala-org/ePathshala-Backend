@@ -16,6 +16,39 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+--
+-- Name: subtract(bigint, character varying, integer); Type: FUNCTION; Schema: public; Owner: a_bank
+--
+
+CREATE FUNCTION public.subtract(param_client_id bigint, param_password character varying, param_amount integer) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	SELECTED_CLIENT_ID BIGINT;
+	AMOUNT INT;
+BEGIN
+	SELECT CLIENT_ID INTO SELECTED_CLIENT_ID
+	FROM CLIENTS
+	WHERE CLIENT_ID = PARAM_CLIENT_ID AND SECURITY_KEY = PARAM_PASSWORD;
+	IF SELECTED_CLIENT_ID IS NULL THEN
+		RETURN 1; --INVALID CREDENTIALS
+	END IF;
+	SELECT CREDIT INTO AMOUNT
+	FROM CLIENTS
+	WHERE CLIENT_ID = PARAM_CLIENT_ID;
+	IF PARAM_AMOUNT > AMOUNT THEN
+		RETURN 2; --INSUFFICIENT CREDIT
+	END IF;
+	UPDATE CLIENTS
+	SET CREDIT = CREDIT - PARAM_AMOUNT
+	WHERE CLIENT_ID = PARAM_CLIENT_ID;
+	RETURN 0; --SUCCESS
+END;
+$$;
+
+
+ALTER FUNCTION public.subtract(param_client_id bigint, param_password character varying, param_amount integer) OWNER TO a_bank;
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -41,7 +74,6 @@ ALTER TABLE public.clients OWNER TO a_bank;
 --
 
 COPY public.clients (client_id, security_key, credit) FROM stdin;
-2	12345678	100000
 8	12345678	100000
 9	12345678	100000
 13	12345678	100000
@@ -64,6 +96,7 @@ COPY public.clients (client_id, security_key, credit) FROM stdin;
 49	12345678	100000
 54	12345678	100000
 56	12345678	100000
+2	12345678	99000
 \.
 
 
