@@ -9,3 +9,5 @@
 #include "root/GetComments.h"
 #include "root/GetStudentDetails.h"
 #include "root/GetCoursesStudent.h"
+#include "root/GetCourseRemainContentCount.h"
+#include "root/CheckStudentEnrolled.h"

@@ -67,6 +67,14 @@ int main()
         {
             GetCoursesStudent(request, response, dbClient);
         }
+        else if(request["type"].asString() == "get-course-remain-content-count")
+        {
+            GetCourseRemainContentCount(request, response, dbClient);
+        }
+        else if(request["type"].asString() == "check-user-enrolled")
+        {
+            CheckUserEnrolled(request, response, dbClient);
+        }
 
         std::clog << "Sending response" << std::endl;
 
