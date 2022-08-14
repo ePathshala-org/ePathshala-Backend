@@ -12,3 +12,4 @@
 #include "root/GetCourseRemainContentCount.h"
 #include "root/CheckStudentEnrolled.h"
 #include "root/BuyCourse.h"
+#include "root/GetCoursesTeacher.h"
