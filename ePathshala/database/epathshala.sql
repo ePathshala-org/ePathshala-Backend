@@ -17,6 +17,30 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- Name: check_student_enrolled(bigint, bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.check_student_enrolled(param_user_id bigint, param_course_id bigint) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	QUERY_COUNT INT;
+BEGIN
+	SELECT COUNT(*) INTO QUERY_COUNT
+	FROM ENROLLED_COURSES
+	WHERE USER_ID = PARAM_USER_ID AND COURSE_ID = PARAM_COURSE_ID;
+	IF QUERY_COUNT > 0 THEN
+		RETURN TRUE;
+	ELSE
+		RETURN FALSE;
+	END IF;
+END;
+$$;
+
+
+ALTER FUNCTION public.check_student_enrolled(param_user_id bigint, param_course_id bigint) OWNER TO epathshala;
+
+--
 -- Name: get_new_user_id(); Type: FUNCTION; Schema: public; Owner: epathshala
 --
 
@@ -341,6 +365,17 @@ CREATE TABLE public.enrolled_courses (
 
 
 ALTER TABLE public.enrolled_courses OWNER TO epathshala;
+
+--
+-- Name: query_count; Type: TABLE; Schema: public; Owner: epathshala
+--
+
+CREATE TABLE public.query_count (
+    count bigint
+);
+
+
+ALTER TABLE public.query_count OWNER TO epathshala;
 
 --
 -- Name: quiz_grades; Type: TABLE; Schema: public; Owner: epathshala
@@ -3557,6 +3592,15 @@ COPY public.enrolled_courses (user_id, course_id, date_of_join) FROM stdin;
 49	5	2020-07-11
 50	1	2021-07-20
 50	2	2021-07-20
+\.
+
+
+--
+-- Data for Name: query_count; Type: TABLE DATA; Schema: public; Owner: epathshala
+--
+
+COPY public.query_count (count) FROM stdin;
+0
 \.
 
 
