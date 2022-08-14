@@ -29,26 +29,24 @@ void BuyCourse(Json::Value &request, Json::Value &response, drogon::orm::DbClien
     httpSubtractRequestPtr->setPath("/");
     httpSubtractRequestPtr->setMethod(drogon::Post);
 
-    std::clog << httpSubtractRequestPtr->getBody() << std::endl;
+    std::pair<drogon::ReqResult, drogon::HttpResponsePtr> responsePair = httpClientPtr->sendRequest(httpSubtractRequestPtr);
 
-    httpClientPtr->sendRequest(httpSubtractRequestPtr, drogon::HttpReqCallback([&request, &response, &dbClient](drogon::ReqResult reqResult, const drogon::HttpResponsePtr &httpResponsePtr)
+    if(responsePair.first == drogon::ReqResult::Ok)
     {
-        if(reqResult == drogon::ReqResult::Ok)
+        Json::Value &subtractResponse = *responsePair.second->getJsonObject().get();
+
+        if(subtractResponse["return"].asInt() == 0)
         {
-            Json::Value &subtractResponse = *httpResponsePtr->getJsonObject().get();
+            std::stringstream queryStream;
 
-            if(subtractResponse["return"].asInt() == 0)
-            {
-                std::stringstream queryStream;
+            queryStream.str("CALL ENROLL_STUDENT($1, $2)");
+            dbClient.execSqlAsyncFuture(queryStream.str(), request["user_id"].asInt64(), request["course_id"].asInt64());
+            queryStream.str("CALL PAY_COURSE_TEACHER_CREDIT($1, $2)");
+            dbClient.execSqlAsyncFuture(queryStream.str(), request["course_id"].asInt64(), request["price"].asInt());
 
-                queryStream.str("SELECT ENROLL_STUDENT($1, $2)");
-                dbClient.execSqlAsyncFuture(queryStream.str(), request["user_id"].asInt64(), request["course_id"].asInt64());
-                queryStream.str("CALL PAY_COURSE_TEACHER_CREDIT($1, $2)");
-                dbClient.execSqlAsyncFuture(queryStream.str(), request["course_id"].asInt64(), request["price"].asInt());
-
-            }
-
-            response["return"] = subtractResponse["return"].asInt();
         }
-    }));
+
+        response["return"] = subtractResponse["return"].asInt();
+        response["ok"] = true;
+    }
 }
