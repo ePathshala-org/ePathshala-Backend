@@ -6,10 +6,12 @@
 #include "SetupInitData.h"
 #include "SetupDbClientPtr.h"
 #include "HandleRequests/HandleRequests.h"
+#include "HandleDownload/HandleDownload.h"
 
 int main()
 {
     Json::Value initData;
+    std::vector<std::pair<std::string, std::fstream>> downloads(1000);
 
     SetupInitData(initData);
 
@@ -23,7 +25,7 @@ int main()
     httpAppFramework.setFileTypes({"gif", "png", "jpg", "js", "css", "html", "ico", "swf", "xap", "apk", "cur", "xml", "mp4", "webm", "ogg"});
 
 	httpAppFramework.registerHandler("/",
-    [&dbClient](const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback)
+    [&dbClient, &httpAppFramework, &downloads](const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback)
     {
         std::shared_ptr<Json::Value> reqJsonPtr = req->getJsonObject();
         Json::Value &request = *reqJsonPtr.get();
@@ -86,6 +88,22 @@ int main()
         else if(request["type"].asString() == "get-courses-teacher")
         {
             GetCoursesTeacher(request, response, dbClient);
+        }
+        else if(request["type"].asString() == "update-user-details")
+        {
+            UpdateUserDetails(request, response, dbClient);
+        }
+        else if(request["type"].asString() == "start-download")
+        {
+            StartDownload(request, response, downloads, httpAppFramework);
+        }
+        else if(request["type"].asString() == "continue-download")
+        {
+            ContinueDownload(request, response, downloads);
+        }
+        else if(request["type"].asString() == "end-download")
+        {
+            EndDownload(request, response, downloads, httpAppFramework);
         }
 
         std::clog << "Sending response" << std::endl;

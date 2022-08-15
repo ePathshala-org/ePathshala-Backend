@@ -14,3 +14,4 @@
 #include "root/BuyCourse.h"
 #include "root/GetCoursesTeacher.h"
 #include "root/GetTeacherDetails.h"
+#include "root/UpdateUserDetails.h"
