@@ -21,6 +21,7 @@ void StartDownload(Json::Value &request, Json::Value &response, std::vector<std:
         }
     }
 
+    response["next"] = true;
     response["index"] = Json::UInt(index); // 1 means show me next
     response["ok"] = true;
 }
