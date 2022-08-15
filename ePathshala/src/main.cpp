@@ -79,6 +79,14 @@ int main()
         {
             BuyCourse(request, response, dbClient);
         }
+        else if(request["type"].asString() == "get-teacher-details")
+        {
+            
+        }
+        else if(request["type"].asString() == "get-courses-teacher")
+        {
+            GetCoursesTeacher(request, response, dbClient);
+        }
 
         std::clog << "Sending response" << std::endl;
 

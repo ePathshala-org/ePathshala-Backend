@@ -16,17 +16,19 @@ void GetCoursesTeacher(Json::Value &request, Json::Value &response, drogon::orm:
 
     for(size_t i = 0; i < result.size(); ++i)
     {
-        Json::Value content;
+        Json::Value course;
 
         for(size_t j = 0; j < request["select"].size(); ++j)
         {
             Json::String defaultValue = "null";
             std::string column = request["select"].get(j, defaultValue).asString();
-            content[column] = result[i][column].as<Json::String>();
+            course[column] = result[i][column].as<Json::String>();
         }
 
-        response["courses"].append(content);
+        response["courses"].append(course);
     }
 
     response["ok"] = true;
+
+    std::clog << response << std::endl;
 }
