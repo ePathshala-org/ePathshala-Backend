@@ -81,7 +81,7 @@ int main()
         }
         else if(request["type"].asString() == "get-teacher-details")
         {
-            
+            GetTeacherDetails(request, response, dbClient);
         }
         else if(request["type"].asString() == "get-courses-teacher")
         {

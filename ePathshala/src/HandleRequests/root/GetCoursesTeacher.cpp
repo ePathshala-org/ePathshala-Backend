@@ -29,6 +29,4 @@ void GetCoursesTeacher(Json::Value &request, Json::Value &response, drogon::orm:
     }
 
     response["ok"] = true;
-
-    std::clog << response << std::endl;
 }

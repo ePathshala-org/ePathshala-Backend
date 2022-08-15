@@ -13,3 +13,4 @@
 #include "root/CheckStudentEnrolled.h"
 #include "root/BuyCourse.h"
 #include "root/GetCoursesTeacher.h"
+#include "root/GetTeacherDetails.h"
