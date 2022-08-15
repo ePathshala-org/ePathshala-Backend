@@ -58,6 +58,55 @@ $$;
 ALTER PROCEDURE public.enroll_student(IN param_student_id bigint, IN param_course_id bigint) OWNER TO epathshala;
 
 --
+-- Name: get_courses_teacher(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_courses_teacher(param_teacher_id bigint) RETURNS TABLE(course_id bigint, title character varying, description character varying, date_of_creation date, price integer, rate numeric, enroll_count bigint)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	TEACHER_RATE NUMERIC;
+	RATED_COUNT BIGINT;
+	ENROLL_COUNT BIGINT;
+BEGIN
+	SELECT COUNT(*) INTO RATED_COUNT
+	FROM CONTENT_VIEWERS
+	JOIN CONTENTS
+	ON(CONTENT_VIEWERS.CONTENT_ID = CONTENTS.CONTENT_ID)
+	JOIN COURSES
+	ON(CONTENTS.COURSE_ID = COURSES.COURSE_ID)
+	WHERE CREATOR_ID = PARAM_TEACHER_ID AND CONTENT_VIEWERS.RATE IS NOT NULL;
+	IF RATED_COUNT > 0 THEN
+		SELECT AVG(CONTENT_VIEWERS.RATE) INTO TEACHER_RATE
+		FROM CONTENT_VIEWERS
+		JOIN CONTENTS
+		ON(CONTENT_VIEWERS.CONTENT_ID = CONTENTS.CONTENT_ID)
+		JOIN COURSES
+		ON(CONTENTS.COURSE_ID = COURSES.COURSE_ID)
+		WHERE CREATOR_ID = PARAM_TEACHER_ID AND CONTENT_VIEWERS.RATE IS NOT NULL;
+	ELSE
+		TEACHER_RATE := 0;
+	END IF;
+	SELECT COUNT(*) INTO ENROLL_COUNT
+	FROM ENROLLED_COURSES
+	JOIN COURSES
+	ON (ENROLLED_COURSES.COURSE_ID = COURSES.COURSE_ID)
+	WHERE CREATOR_ID = PARAM_TEACHER_ID;
+	RETURN QUERY SELECT COURSES.COURSE_ID, COURSES.TITLE, TRIM(COURSES.DESCRIPTION)::VARCHAR, COURSES.DATE_OF_CREATION, COURSES.PRICE, TEACHER_RATE::NUMERIC(3, 2), ENROLL_COUNT
+	FROM COURSES
+	JOIN CONTENTS
+	ON (COURSES.COURSE_ID = CONTENTS.COURSE_ID)
+	JOIN CONTENT_VIEWERS
+	ON (CONTENTS.CONTENT_ID = CONTENT_VIEWERS.CONTENT_ID)
+	WHERE CREATOR_ID = PARAM_TEACHER_ID
+	GROUP BY COURSES.COURSE_ID, COURSES.TITLE, COURSES.DESCRIPTION, COURSES.DATE_OF_CREATION, COURSES.PRICE;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_courses_teacher(param_teacher_id bigint) OWNER TO epathshala;
+
+--
 -- Name: get_new_user_id(); Type: FUNCTION; Schema: public; Owner: epathshala
 --
 
@@ -88,6 +137,46 @@ $$;
 
 
 ALTER FUNCTION public.get_new_user_id() OWNER TO epathshala;
+
+--
+-- Name: get_teacher_details(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_teacher_details(param_teacher_id bigint) RETURNS TABLE(user_id bigint, full_name character varying, email character varying, bio character varying, date_of_birth date, date_of_join date, rate numeric)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	RATED_COUNT BIGINT;
+	TEACHER_RATE NUMERIC;
+BEGIN
+	SELECT COUNT(*) INTO RATED_COUNT
+	FROM CONTENT_VIEWERS
+	JOIN CONTENTS
+	ON (CONTENT_VIEWERS.CONTENT_ID = CONTENTS.CONTENT_ID)
+	JOIN COURSES
+	ON (CONTENTS.COURSE_ID = COURSES.COURSE_ID)
+	WHERE CREATOR_ID = PARAM_TEACHER_ID AND CONTENT_VIEWERS.RATE IS NOT NULL;
+	IF RATED_COUNT > 0 THEN
+		SELECT AVG(CONTENT_VIEWERS.RATE) INTO RATED_COUNT
+		FROM CONTENT_VIEWERS
+		JOIN CONTENTS
+		ON (CONTENT_VIEWERS.CONTENT_ID = CONTENTS.CONTENT_ID)
+		JOIN COURSES
+		ON (CONTENTS.COURSE_ID = COURSES.COURSE_ID)
+		WHERE CREATOR_ID = PARAM_TEACHER_ID AND CONTENT_VIEWERS.RATE IS NOT NULL;
+	ELSE
+		TEACHER_RATE := 0;
+	END IF;
+	RETURN QUERY SELECT TEACHERS.USER_ID, USERS.FULL_NAME, USERS.EMAIL, TRIM(USERS.BIO)::VARCHAR, USERS.DATE_OF_BIRTH, TEACHERS.DATE_OF_JOIN, TEACHER_RATE
+	FROM TEACHERS
+	JOIN USERS
+	ON (TEACHERS.USER_ID = USERS.USER_ID)
+	WHERE TEACHERS.USER_ID = PARAM_TEACHER_ID;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_teacher_details(param_teacher_id bigint) OWNER TO epathshala;
 
 --
 -- Name: insert_user(character varying, character varying, character varying, integer, integer, integer, character varying, character varying); Type: FUNCTION; Schema: public; Owner: epathshala
@@ -246,6 +335,39 @@ $$;
 
 
 ALTER PROCEDURE public.print(IN to_print character varying) OWNER TO epathshala;
+
+--
+-- Name: update_user_details(bigint, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.update_user_details(param_user_id bigint, param_full_name character varying, param_email character varying, param_password character varying, param_bio character varying, param_date_of_birth character varying) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	IF LENGTH(PARAM_FULL_NAME) = 0 THEN
+		RETURN 1; --EMPTY FULL NAME
+	ELSIF LENGTH(PARAM_EMAIL) = 0 THEN
+		RETURN 2; --EMPTY EMAIL
+	ELSIF PARAM_EMAIL NOT LIKE '%_@_%.___' THEN
+		RETURN 3; --INVALID EMAIL
+	ELSIF LENGTH(PARAM_PASSWORD) < 8 THEN
+		RETURN 4; --PASSWORD TOO SMALL
+	ELSIF LENGTH(PARAM_PASSWORD) > 32 THEN
+		RETURN 5; --PASSWORD TOO BIG
+	END IF;
+	UPDATE USERS
+	SET FULL_NAME = PARAM_FULL_NAME,
+		EMAIL = PARAM_EMAIL,
+		SECURITY_KEY = PARAM_PASSWORD,
+		BIO = PARAM_BIO,
+		DATE_OF_BIRTH = TO_DATE(PARAM_DATE_OF_BIRTH, 'YYYY-MM-DD')
+	WHERE USER_ID = PARAM_USER_ID;
+	RETURN 0; --SUCCESS
+END;
+$$;
+
+
+ALTER FUNCTION public.update_user_details(param_user_id bigint, param_full_name character varying, param_email character varying, param_password character varying, param_bio character varying, param_date_of_birth character varying) OWNER TO epathshala;
 
 SET default_tablespace = '';
 
@@ -529,8 +651,7 @@ CREATE TABLE public.users (
     bio character(100) DEFAULT ''::bpchar,
     email character varying NOT NULL,
     user_type character(10) NOT NULL,
-    credit_card_id bigint,
-    bank_id bigint,
+    pfp boolean DEFAULT false,
     CONSTRAINT users_email_check CHECK (((email)::text ~~ '_%@_%.___'::text)),
     CONSTRAINT users_security_key_check CHECK ((length(security_key) >= 8)),
     CONSTRAINT users_user_id_check CHECK ((user_id > 0)),
@@ -3864,6 +3985,7 @@ COPY public.students (user_id, date_of_join, rank_point) FROM stdin;
 48	2020-11-28	0
 49	2020-07-11	0
 50	2021-07-20	0
+61	2022-08-15	0
 \.
 
 
@@ -3925,67 +4047,68 @@ COPY public.teachers (user_id, date_of_join, credit) FROM stdin;
 -- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: epathshala
 --
 
-COPY public.users (user_id, full_name, security_key, date_of_birth, bio, email, user_type, credit_card_id, bank_id) FROM stdin;
-2	Marisol Hicks	12345678                        	1997-11-04	                                                                                                    	marisol445@gmail.com	STUDENT   	2	1
-3	Jose Sylvester	12345678                        	2000-03-06	                                                                                                    	jose7038@gmail.com	STUDENT   	3	3
-4	William Adams	12345678                        	1993-11-21	                                                                                                    	william2284@gmail.com	STUDENT   	4	2
-5	Michelle Kimmell	12345678                        	1992-05-18	                                                                                                    	michelle2802@gmail.com	STUDENT   	5	2
-6	Ashley Langston	12345678                        	1980-03-27	                                                                                                    	ashley932@gmail.com	STUDENT   	6	2
-7	Allyson Moschetti	12345678                        	1997-12-05	                                                                                                    	allyson3467@gmail.com	STUDENT   	7	2
-8	Dolores White	12345678                        	1994-09-24	                                                                                                    	dolores2369@gmail.com	STUDENT   	8	1
-9	Dorothy Alford	12345678                        	1998-01-04	                                                                                                    	dorothy1775@gmail.com	STUDENT   	9	1
-10	Beth Smith	12345678                        	1997-09-18	                                                                                                    	beth3902@gmail.com	STUDENT   	10	3
-11	Lila Crawford	12345678                        	1983-10-20	                                                                                                    	lila6053@gmail.com	STUDENT   	11	3
-12	Devon Steger	12345678                        	1991-06-09	                                                                                                    	devon1321@gmail.com	STUDENT   	12	3
-13	Al Lynch	12345678                        	1989-07-24	                                                                                                    	al8986@gmail.com	STUDENT   	13	1
-14	Joi Bellefeuille	12345678                        	1992-11-17	                                                                                                    	joi6193@gmail.com	STUDENT   	14	1
-15	Kimberly Toler	12345678                        	1981-04-06	                                                                                                    	kimberly1991@gmail.com	STUDENT   	15	1
-16	Tonya Harris	12345678                        	1998-03-20	                                                                                                    	tonya6665@gmail.com	STUDENT   	16	3
-17	Joseph Sharp	12345678                        	1993-12-28	                                                                                                    	joseph7068@gmail.com	STUDENT   	17	2
-18	Carrie Andrew	12345678                        	1987-09-24	                                                                                                    	carrie7877@gmail.com	STUDENT   	18	1
-19	Louis Laster	12345678                        	1989-01-12	                                                                                                    	louis9310@gmail.com	STUDENT   	19	3
-20	Dustin Coppinger	12345678                        	1997-11-25	                                                                                                    	dustin8186@gmail.com	STUDENT   	20	2
-21	Hilario Skrine	12345678                        	1995-12-05	                                                                                                    	hilario581@gmail.com	STUDENT   	21	1
-22	Crystal Warnick	12345678                        	1992-10-03	                                                                                                    	crystal478@gmail.com	STUDENT   	22	2
-23	Mamie Richmond	12345678                        	1991-12-04	                                                                                                    	mamie4456@gmail.com	STUDENT   	23	1
-24	Bryan Harker	12345678                        	1984-10-04	                                                                                                    	bryan305@gmail.com	STUDENT   	24	2
-25	Deborah Kachmarsky	12345678                        	1987-06-06	                                                                                                    	deborah8755@gmail.com	STUDENT   	25	1
-26	Sharon Valcourt	12345678                        	1999-03-26	                                                                                                    	sharon6716@gmail.com	STUDENT   	26	1
-27	Steven Hawkins	12345678                        	1992-05-09	                                                                                                    	steven6322@gmail.com	STUDENT   	27	2
-28	Michael Ellis	12345678                        	1988-01-02	                                                                                                    	michael3105@gmail.com	STUDENT   	28	3
-29	Willie Vieira	12345678                        	1985-07-01	                                                                                                    	willie8026@gmail.com	STUDENT   	29	2
-30	Shari Swartz	12345678                        	1982-09-26	                                                                                                    	shari875@gmail.com	STUDENT   	30	2
-31	Thomas Caraballo	12345678                        	1990-01-03	                                                                                                    	thomas476@gmail.com	STUDENT   	31	2
-32	Sharon Acker	12345678                        	1988-11-26	                                                                                                    	sharon5866@gmail.com	STUDENT   	32	1
-33	James Thomas	12345678                        	1984-08-02	                                                                                                    	james8865@gmail.com	STUDENT   	33	1
-1	Mary Prezzia	12345678                        	1986-02-25	                                                                                                    	mary1151@gmail.com	STUDENT   	1	3
-34	Reginald Contreras	12345678                        	1992-07-17	                                                                                                    	reginald5090@gmail.com	STUDENT   	34	2
-35	Robert Gartin	12345678                        	1999-02-15	                                                                                                    	robert2831@gmail.com	STUDENT   	35	3
-36	Sharon Gamino	12345678                        	1999-11-17	                                                                                                    	sharon1938@gmail.com	STUDENT   	36	2
-37	Cynthia Gonzalez	12345678                        	1989-05-05	                                                                                                    	cynthia6438@gmail.com	STUDENT   	37	1
-38	Brent Clower	12345678                        	1998-05-18	                                                                                                    	brent4149@gmail.com	STUDENT   	38	1
-39	Philip Vanderloo	12345678                        	1985-05-13	                                                                                                    	philip6560@gmail.com	STUDENT   	39	3
-40	Tana Kinloch	12345678                        	1995-05-24	                                                                                                    	tana6370@gmail.com	STUDENT   	40	1
-41	Maria Summer	12345678                        	1981-10-16	                                                                                                    	maria1475@gmail.com	STUDENT   	41	2
-42	Douglas Mcgowan	12345678                        	1992-05-09	                                                                                                    	douglas2320@gmail.com	STUDENT   	42	2
-43	Noah Jamerson	12345678                        	1984-02-25	                                                                                                    	noah2915@gmail.com	STUDENT   	43	1
-44	Helen Burton	12345678                        	1993-03-18	                                                                                                    	helen2377@gmail.com	STUDENT   	44	2
-45	Crystal Hamby	12345678                        	1986-10-08	                                                                                                    	crystal1815@gmail.com	STUDENT   	45	1
-46	Glen Basista	12345678                        	1997-12-27	                                                                                                    	glen3930@gmail.com	STUDENT   	46	1
-47	Rodney Wolfe	12345678                        	1988-05-10	                                                                                                    	rodney23@gmail.com	STUDENT   	47	1
-48	Lori Gilmore	12345678                        	1986-01-07	                                                                                                    	lori8056@gmail.com	STUDENT   	48	3
-49	Kristina Shriver	12345678                        	1996-11-06	                                                                                                    	kristina8057@gmail.com	STUDENT   	49	1
-50	William Kish	12345678                        	1993-12-07	                                                                                                    	william3749@gmail.com	STUDENT   	50	3
-51	Martha Marbley	12345678                        	1986-05-26	                                                                                                    	martha4381@gmail.com	TEACHER   	51	3
-52	Carolyn Watkins	12345678                        	2000-06-12	                                                                                                    	carolyn8065@gmail.com	TEACHER   	52	3
-53	Diane Jones	12345678                        	1998-06-24	                                                                                                    	diane6212@gmail.com	TEACHER   	53	3
-54	Helena Nolder	12345678                        	1992-11-09	                                                                                                    	helena1754@gmail.com	TEACHER   	54	1
-55	Mike Mills	12345678                        	1985-11-09	                                                                                                    	mike7179@gmail.com	TEACHER   	55	2
-56	Charles Wiltberger	12345678                        	1982-09-21	                                                                                                    	charles2480@gmail.com	TEACHER   	56	1
-57	Henry Depalma	12345678                        	1993-06-27	                                                                                                    	henry4121@gmail.com	TEACHER   	57	3
-60	Pamela Pemberton	12345678                        	1981-02-21	                                                                                                    	pamela4346@gmail.com	TEACHER   	60	3
-58	Mario Barnett	12345678                        	1998-02-23	                                                                                                    	mario4755@gmail.com	TEACHER   	58	3
-59	Hubert Rodriguez	12345678                        	1988-11-19	                                                                                                    	hubert3151@gmail.com	TEACHER   	59	3
+COPY public.users (user_id, full_name, security_key, date_of_birth, bio, email, user_type, pfp) FROM stdin;
+2	Marisol Hicks	12345678                        	1997-11-04	                                                                                                    	marisol445@gmail.com	STUDENT   	f
+3	Jose Sylvester	12345678                        	2000-03-06	                                                                                                    	jose7038@gmail.com	STUDENT   	f
+4	William Adams	12345678                        	1993-11-21	                                                                                                    	william2284@gmail.com	STUDENT   	f
+6	Ashley Langston	12345678                        	1980-03-27	                                                                                                    	ashley932@gmail.com	STUDENT   	f
+7	Allyson Moschetti	12345678                        	1997-12-05	                                                                                                    	allyson3467@gmail.com	STUDENT   	f
+8	Dolores White	12345678                        	1994-09-24	                                                                                                    	dolores2369@gmail.com	STUDENT   	f
+9	Dorothy Alford	12345678                        	1998-01-04	                                                                                                    	dorothy1775@gmail.com	STUDENT   	f
+10	Beth Smith	12345678                        	1997-09-18	                                                                                                    	beth3902@gmail.com	STUDENT   	f
+11	Lila Crawford	12345678                        	1983-10-20	                                                                                                    	lila6053@gmail.com	STUDENT   	f
+12	Devon Steger	12345678                        	1991-06-09	                                                                                                    	devon1321@gmail.com	STUDENT   	f
+13	Al Lynch	12345678                        	1989-07-24	                                                                                                    	al8986@gmail.com	STUDENT   	f
+14	Joi Bellefeuille	12345678                        	1992-11-17	                                                                                                    	joi6193@gmail.com	STUDENT   	f
+15	Kimberly Toler	12345678                        	1981-04-06	                                                                                                    	kimberly1991@gmail.com	STUDENT   	f
+16	Tonya Harris	12345678                        	1998-03-20	                                                                                                    	tonya6665@gmail.com	STUDENT   	f
+17	Joseph Sharp	12345678                        	1993-12-28	                                                                                                    	joseph7068@gmail.com	STUDENT   	f
+18	Carrie Andrew	12345678                        	1987-09-24	                                                                                                    	carrie7877@gmail.com	STUDENT   	f
+19	Louis Laster	12345678                        	1989-01-12	                                                                                                    	louis9310@gmail.com	STUDENT   	f
+20	Dustin Coppinger	12345678                        	1997-11-25	                                                                                                    	dustin8186@gmail.com	STUDENT   	f
+21	Hilario Skrine	12345678                        	1995-12-05	                                                                                                    	hilario581@gmail.com	STUDENT   	f
+22	Crystal Warnick	12345678                        	1992-10-03	                                                                                                    	crystal478@gmail.com	STUDENT   	f
+23	Mamie Richmond	12345678                        	1991-12-04	                                                                                                    	mamie4456@gmail.com	STUDENT   	f
+24	Bryan Harker	12345678                        	1984-10-04	                                                                                                    	bryan305@gmail.com	STUDENT   	f
+25	Deborah Kachmarsky	12345678                        	1987-06-06	                                                                                                    	deborah8755@gmail.com	STUDENT   	f
+26	Sharon Valcourt	12345678                        	1999-03-26	                                                                                                    	sharon6716@gmail.com	STUDENT   	f
+27	Steven Hawkins	12345678                        	1992-05-09	                                                                                                    	steven6322@gmail.com	STUDENT   	f
+28	Michael Ellis	12345678                        	1988-01-02	                                                                                                    	michael3105@gmail.com	STUDENT   	f
+29	Willie Vieira	12345678                        	1985-07-01	                                                                                                    	willie8026@gmail.com	STUDENT   	f
+30	Shari Swartz	12345678                        	1982-09-26	                                                                                                    	shari875@gmail.com	STUDENT   	f
+31	Thomas Caraballo	12345678                        	1990-01-03	                                                                                                    	thomas476@gmail.com	STUDENT   	f
+32	Sharon Acker	12345678                        	1988-11-26	                                                                                                    	sharon5866@gmail.com	STUDENT   	f
+33	James Thomas	12345678                        	1984-08-02	                                                                                                    	james8865@gmail.com	STUDENT   	f
+1	Mary Prezzia	12345678                        	1986-02-25	                                                                                                    	mary1151@gmail.com	STUDENT   	f
+34	Reginald Contreras	12345678                        	1992-07-17	                                                                                                    	reginald5090@gmail.com	STUDENT   	f
+35	Robert Gartin	12345678                        	1999-02-15	                                                                                                    	robert2831@gmail.com	STUDENT   	f
+36	Sharon Gamino	12345678                        	1999-11-17	                                                                                                    	sharon1938@gmail.com	STUDENT   	f
+37	Cynthia Gonzalez	12345678                        	1989-05-05	                                                                                                    	cynthia6438@gmail.com	STUDENT   	f
+38	Brent Clower	12345678                        	1998-05-18	                                                                                                    	brent4149@gmail.com	STUDENT   	f
+39	Philip Vanderloo	12345678                        	1985-05-13	                                                                                                    	philip6560@gmail.com	STUDENT   	f
+40	Tana Kinloch	12345678                        	1995-05-24	                                                                                                    	tana6370@gmail.com	STUDENT   	f
+41	Maria Summer	12345678                        	1981-10-16	                                                                                                    	maria1475@gmail.com	STUDENT   	f
+42	Douglas Mcgowan	12345678                        	1992-05-09	                                                                                                    	douglas2320@gmail.com	STUDENT   	f
+43	Noah Jamerson	12345678                        	1984-02-25	                                                                                                    	noah2915@gmail.com	STUDENT   	f
+44	Helen Burton	12345678                        	1993-03-18	                                                                                                    	helen2377@gmail.com	STUDENT   	f
+45	Crystal Hamby	12345678                        	1986-10-08	                                                                                                    	crystal1815@gmail.com	STUDENT   	f
+46	Glen Basista	12345678                        	1997-12-27	                                                                                                    	glen3930@gmail.com	STUDENT   	f
+47	Rodney Wolfe	12345678                        	1988-05-10	                                                                                                    	rodney23@gmail.com	STUDENT   	f
+48	Lori Gilmore	12345678                        	1986-01-07	                                                                                                    	lori8056@gmail.com	STUDENT   	f
+49	Kristina Shriver	12345678                        	1996-11-06	                                                                                                    	kristina8057@gmail.com	STUDENT   	f
+50	William Kish	12345678                        	1993-12-07	                                                                                                    	william3749@gmail.com	STUDENT   	f
+51	Martha Marbley	12345678                        	1986-05-26	                                                                                                    	martha4381@gmail.com	TEACHER   	f
+52	Carolyn Watkins	12345678                        	2000-06-12	                                                                                                    	carolyn8065@gmail.com	TEACHER   	f
+53	Diane Jones	12345678                        	1998-06-24	                                                                                                    	diane6212@gmail.com	TEACHER   	f
+54	Helena Nolder	12345678                        	1992-11-09	                                                                                                    	helena1754@gmail.com	TEACHER   	f
+55	Mike Mills	12345678                        	1985-11-09	                                                                                                    	mike7179@gmail.com	TEACHER   	f
+56	Charles Wiltberger	12345678                        	1982-09-21	                                                                                                    	charles2480@gmail.com	TEACHER   	f
+57	Henry Depalma	12345678                        	1993-06-27	                                                                                                    	henry4121@gmail.com	TEACHER   	f
+60	Pamela Pemberton	12345678                        	1981-02-21	                                                                                                    	pamela4346@gmail.com	TEACHER   	f
+58	Mario Barnett	12345678                        	1998-02-23	                                                                                                    	mario4755@gmail.com	TEACHER   	f
+59	Hubert Rodriguez	12345678                        	1988-11-19	                                                                                                    	hubert3151@gmail.com	TEACHER   	f
+5	Michelle Kimmell	12345678                        	1992-01-01	                                                                                                    	michelle2802@gmail.com	STUDENT   	f
+61	Mustafa Siam Ur Rafique	87654321                        	2000-10-16	Hehe                                                                                                	siam11651@outlook.com	STUDENT   	f
 \.
 
 
