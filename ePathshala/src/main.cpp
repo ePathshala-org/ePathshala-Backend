@@ -10,19 +10,14 @@
 
 int main()
 {
-    Json::Value initData;
+    // Json::Value initData;
     std::vector<std::pair<std::string, std::fstream>> downloads(1000);
+	drogon::HttpAppFramework &httpAppFramework = drogon::app();
 
-    SetupInitData(initData);
+    httpAppFramework.loadConfigFile("./data/config.json");
 
-    drogon::orm::DbClientPtr dbClientPtr = GetDbClientPtr(initData);
-    drogon::orm::DbClient &dbClient = *dbClientPtr.get();
-
-	drogon::HttpAppFramework &httpAppFramework = drogon::app().addListener(initData["ip"].asString(), initData["port"].asInt());
-
-	httpAppFramework.setThreadNum(16);
-    httpAppFramework.setDocumentRoot(initData["docRoot"].asString());
-    httpAppFramework.setFileTypes({"gif", "png", "jpg", "js", "css", "html", "ico", "swf", "xap", "apk", "cur", "xml", "mp4", "webm", "ogg"});
+    drogon::orm::DbClientPtr dbClientPtr = drogon::orm::DbClient::newPgClient("user=epathshala dbname=epathshala password=1234", 1);
+    drogon::orm::DbClient &dbClient = *dbClientPtr;
 
 	httpAppFramework.registerHandler("/",
     [&dbClient, &httpAppFramework, &downloads](const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback)
@@ -93,17 +88,9 @@ int main()
         {
             UpdateUserDetails(request, response, dbClient);
         }
-        else if(request["type"].asString() == "start-download")
+        else if(request["type"].asString() == "update-pfp")
         {
-            StartDownload(request, response, downloads, httpAppFramework);
-        }
-        else if(request["type"].asString() == "continue-download")
-        {
-            ContinueDownload(request, response, downloads);
-        }
-        else if(request["type"].asString() == "end-download")
-        {
-            EndDownload(request, response, downloads, httpAppFramework);
+            UpdatePfp(request, response, httpAppFramework);
         }
 
         std::clog << "Sending response" << std::endl;
@@ -113,6 +100,17 @@ int main()
         callback(httpResponsePtr);
     },
     {drogon::Post});
+
+    httpAppFramework.registerHandler("/server-test",
+    [](const drogon::HttpRequestPtr &httpRequestPtr, std::function<void(const drogon::HttpResponsePtr &)> &&callback)
+    {
+        std::clog << "***server-test***" << std::endl;
+
+        drogon::HttpResponsePtr httpResponsePtr = drogon::HttpResponse::newHttpResponse();
+        httpResponsePtr->setBody("Hello");
+
+        callback(httpResponsePtr);
+    }, {drogon::Post});
 
 	httpAppFramework.run();
 

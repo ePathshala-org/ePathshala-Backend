@@ -15,3 +15,4 @@
 #include "root/GetCoursesTeacher.h"
 #include "root/GetTeacherDetails.h"
 #include "root/UpdateUserDetails.h"
+#include "root/UpdatePfp.h"

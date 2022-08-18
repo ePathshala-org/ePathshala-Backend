@@ -24,10 +24,11 @@ add_executable(ePathshala
     "src/HandleRequests/root/GetCoursesTeacher.cpp"
     "src/HandleRequests/root/GetTeacherDetails.cpp"
     "src/HandleRequests/root/UpdateUserDetails.cpp"
-    "src/HandleDownload/StartDownload.cpp"
-    "src/HandleDownload/ContinueDownload.cpp"
-    "src/HandleDownload/EndDownload.cpp"
+    "src/HandleRequests/root/UpdatePfp.cpp"
 )
 
 find_package(Drogon REQUIRED)
 target_link_libraries(ePathshala Drogon::Drogon)
+find_package(ImageMagick COMPONENTS Magick++)
+include_directories(${ImageMagick_INCLUDE_DIRS})
+target_link_libraries(ePathshala ${ImageMagick_LIBRARIES})
