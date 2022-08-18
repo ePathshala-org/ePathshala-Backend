@@ -16,3 +16,4 @@
 #include "root/GetTeacherDetails.h"
 #include "root/UpdateUserDetails.h"
 #include "root/UpdatePfp.h"
+#include "root/Insert/Course.h"

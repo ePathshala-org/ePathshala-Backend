@@ -6,7 +6,6 @@
 #include "SetupInitData.h"
 #include "SetupDbClientPtr.h"
 #include "HandleRequests/HandleRequests.h"
-#include "HandleDownload/HandleDownload.h"
 
 int main()
 {
@@ -91,6 +90,10 @@ int main()
         else if(request["type"].asString() == "update-pfp")
         {
             UpdatePfp(request, response, httpAppFramework);
+        }
+        else if(request["type"].asString() == "insert-new-course")
+        {
+            InsertCourse(request, response, dbClient);
         }
 
         std::clog << "Sending response" << std::endl;
