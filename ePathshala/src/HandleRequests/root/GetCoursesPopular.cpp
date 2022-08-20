@@ -1,13 +1,12 @@
 #include "GetCoursesPopular.h"
 
-void GetCoursesPopular(Json::Value &requestJson, Json::Value &response, drogon::orm::DbClient &dbClient)
+void GetCoursesPopular(Json::Value &request, Json::Value &response, drogon::orm::DbClient &dbClient)
 {
     std::clog << "Get \"courses-popular\" request" << std::endl;
 
-    std::ifstream inputFileStream("./sql/get-courses-popular.sql");
     std::stringstream queryStream;
 
-    queryStream << inputFileStream.rdbuf();
+    queryStream.str("SELECT * FROM GET_COURSES_BY_ENROLL_COUNT_DESC()");
 
     std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str());
 
@@ -18,15 +17,13 @@ void GetCoursesPopular(Json::Value &requestJson, Json::Value &response, drogon::
     for(size_t i = 0; i < result.size(); ++i)
     {
         Json::Value course;
-        course["COURSE_ID"] = result[i]["COURSE_ID"].as<Json::Int64>();
-        course["TITLE"] = result[i]["TITLE"].as<Json::String>();
-        course["DESCRIPTION"] = result[i]["DESCRIPTION"].as<Json::String>();
-        course["DATE_OF_CREATION"] = result[i]["DATE_OF_CREATION"].as<Json::String>();
-        course["PRICE"] = result[i]["PRICE"].as<Json::Int>();
-        course["CREATOR_ID"] = result[i]["CREATOR_ID"].as<Json::Int64>();
-        course["CREATOR_NAME"] = result[i]["CREATOR_NAME"].as<Json::String>();
-        course["ENROLL_COUNT"] = result[i]["ENROLL_COUNT"].as<Json::Int64>();
-        course["RATE"] = result[i]["RATE"].as<double>();
+
+        for(size_t j = 0; j < request["select"].size(); ++j)
+        {
+            Json::String defaultValue = "null";
+            std::string column = request["select"].get(j, defaultValue).asString();
+            course[column] = result[i][column].as<Json::String>();
+        }
 
         response["courses"].append(course);
     }
