@@ -70,6 +70,35 @@ $$;
 ALTER FUNCTION public.contents_rate_trigger() OWNER TO epathshala;
 
 --
+-- Name: courses_enroll_count_trigger(); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.courses_enroll_count_trigger() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	ID BIGINT;
+	NEW_ENROLL_COUNT BIGINT;
+BEGIN
+	IF NEW.COURSE_ID IS NOT NULL THEN
+		ID := NEW.COURSE_ID;
+	ELSE
+		ID := OLD.COURSE_ID;
+	END IF;
+	SELECT COUNT(*) INTO NEW_ENROLL_COUNT
+	FROM ENROLLED_COURSES
+	WHERE COURSE_ID = ID;
+	UPDATE COURSES
+	SET ENROLL_COUNT = NEW_ENROLL_COUNT
+	WHERE COURSE_ID = ID;
+	RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.courses_enroll_count_trigger() OWNER TO epathshala;
+
+--
 -- Name: courses_rate_trigger(); Type: FUNCTION; Schema: public; Owner: epathshala
 --
 
@@ -114,6 +143,125 @@ $$;
 
 
 ALTER PROCEDURE public.enroll_student(IN param_student_id bigint, IN param_course_id bigint) OWNER TO epathshala;
+
+--
+-- Name: get_courses_by_enroll_count_asc(); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_courses_by_enroll_count_asc() RETURNS TABLE(course_id bigint, title character varying, description character varying, date_of_creation date, price integer, rate numeric, enroll_count bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT COURSES.COURSE_ID, COURSES.TITLE, TRIM(COURSES.DESCRIPTION)::VARCHAR, COURSES.DATE_OF_CREATION, COURSES.PRICE, COURSES.RATE::NUMERIC(3, 2), COURSES.ENROLL_COUNT
+	FROM COURSES
+	ORDER BY ENROLL_COUNT ASC;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_courses_by_enroll_count_asc() OWNER TO epathshala;
+
+--
+-- Name: get_courses_by_enroll_count_desc(); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_courses_by_enroll_count_desc() RETURNS TABLE(course_id bigint, title character varying, description character varying, date_of_creation date, price integer, rate numeric, enroll_count bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT COURSES.COURSE_ID, COURSES.TITLE, TRIM(COURSES.DESCRIPTION)::VARCHAR, COURSES.DATE_OF_CREATION, COURSES.PRICE, COURSES.RATE::NUMERIC(3, 2), COURSES.ENROLL_COUNT
+	FROM COURSES
+	ORDER BY ENROLL_COUNT DESC;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_courses_by_enroll_count_desc() OWNER TO epathshala;
+
+--
+-- Name: get_courses_by_price_asc(); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_courses_by_price_asc() RETURNS TABLE(course_id bigint, title character varying, description character varying, date_of_creation date, price integer, rate numeric, enroll_count bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT COURSES.COURSE_ID, COURSES.TITLE, TRIM(COURSES.DESCRIPTION)::VARCHAR, COURSES.DATE_OF_CREATION, COURSES.PRICE, COURSES.RATE::NUMERIC(3, 2), COURSES.ENROLL_COUNT
+	FROM COURSES
+	ORDER BY PRICE ASC;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_courses_by_price_asc() OWNER TO epathshala;
+
+--
+-- Name: get_courses_by_price_desc(); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_courses_by_price_desc() RETURNS TABLE(course_id bigint, title character varying, description character varying, date_of_creation date, price integer, rate numeric, enroll_count bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT COURSES.COURSE_ID, COURSES.TITLE, TRIM(COURSES.DESCRIPTION)::VARCHAR, COURSES.DATE_OF_CREATION, COURSES.PRICE, COURSES.RATE::NUMERIC(3, 2), COURSES.ENROLL_COUNT
+	FROM COURSES
+	ORDER BY PRICE DESC;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_courses_by_price_desc() OWNER TO epathshala;
+
+--
+-- Name: get_courses_by_rate_desc(); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_courses_by_rate_desc() RETURNS TABLE(course_id bigint, title character varying, description character varying, date_of_creation date, price integer, rate numeric, enroll_count bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT COURSES.COURSE_ID, COURSES.TITLE, TRIM(COURSES.DESCRIPTION)::VARCHAR, COURSES.DATE_OF_CREATION, COURSES.PRICE, COURSES.RATE::NUMERIC(3, 2), COURSES.ENROLL_COUNT
+	FROM COURSES
+	ORDER BY RATE DESC;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_courses_by_rate_desc() OWNER TO epathshala;
+
+--
+-- Name: get_courses_popular(); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_courses_popular() RETURNS TABLE(course_id bigint, title character varying, description character varying, date_of_creation date, price integer, rate numeric, enroll_count bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT COURSES.COURSE_ID, COURSES.TITLE, TRIM(COURSES.DESCRIPTION)::VARCHAR, COURSES.DATE_OF_CREATION, COURSES.PRICE, COURSES.RATE::NUMERIC(3, 2), COURSES.ENROLL_COUNT
+	FROM COURSES
+	ORDER BY ENROLL_COUNT DESC;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_courses_popular() OWNER TO epathshala;
+
+--
+-- Name: get_courses_rate(); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_courses_rate() RETURNS TABLE(course_id bigint, title character varying, description character varying, date_of_creation date, price integer, rate numeric, enroll_count bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT COURSES.COURSE_ID, COURSES.TITLE, TRIM(COURSES.DESCRIPTION)::VARCHAR, COURSES.DATE_OF_CREATION, COURSES.PRICE, COURSES.RATE::NUMERIC(3, 2), COURSES.ENROLL_COUNT
+	FROM COURSES
+	ORDER BY RATE DESC;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_courses_rate() OWNER TO epathshala;
 
 --
 -- Name: get_courses_teacher(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
@@ -687,7 +835,9 @@ CREATE TABLE public.courses (
     price integer DEFAULT 0,
     creator_id bigint,
     rate numeric,
+    enroll_count bigint DEFAULT 0,
     CONSTRAINT courses_course_id_check CHECK ((course_id > 0)),
+    CONSTRAINT courses_enroll_count_check CHECK ((enroll_count >= 0)),
     CONSTRAINT courses_price_check CHECK ((price >= 0)),
     CONSTRAINT courses_rate_check CHECK ((((0)::numeric <= rate) AND (rate <= (5)::numeric)))
 );
@@ -3661,17 +3811,17 @@ COPY public.course_tags (tag_id, course_id) FROM stdin;
 -- Data for Name: courses; Type: TABLE DATA; Schema: public; Owner: epathshala
 --
 
-COPY public.courses (course_id, title, description, date_of_creation, price, creator_id, rate) FROM stdin;
-6	Statistics and Probablity	Learn statistics and probablity                                                                     	2020-05-08	700	56	2.6458333333333333
-9	Computers and Internet	Learn how the amazing world of internet works                                                       	2021-03-13	1200	59	3.3095238095238095
-7	Computer Programming	Learn the art of programming                                                                        	2020-10-16	1000	57	3.5833333333333333
-5	Statistics	Learn statistics basics                                                                             	2020-03-12	700	55	3.1426767676767677
-10	Macroeconomics	Learn macroeconomics                                                                                	2021-05-15	500	60	3.5416666666666667
-4	Trigonometry	Master trigonometry                                                                                 	2020-03-11	600	54	2.8079365079365079
-1	Algebra 1	Introduction to algebra                                                                             	2019-10-19	500	51	3.0950396825396825
-3	Geometry	Learn geometry having fun                                                                           	2020-10-15	600	53	2.9301190476190476
-8	Microeconomics	Learn microeconomics                                                                                	2020-11-13	500	58	3.8981481481481481
-2	Algebra 2	Some advanced topics on algebra                                                                     	2019-10-01	500	52	2.93069165682802046818
+COPY public.courses (course_id, title, description, date_of_creation, price, creator_id, rate, enroll_count) FROM stdin;
+6	Statistics and Probablity	Learn statistics and probablity                                                                     	2020-05-08	700	56	2.6458333333333333	20
+7	Computer Programming	Learn the art of programming                                                                        	2020-10-16	1000	57	3.5833333333333333	14
+9	Computers and Internet	Learn how the amazing world of internet works                                                       	2021-03-13	1200	59	3.3095238095238095	5
+5	Statistics	Learn statistics basics                                                                             	2020-03-12	700	55	3.1426767676767677	30
+10	Macroeconomics	Learn macroeconomics                                                                                	2021-05-15	500	60	3.5416666666666667	1
+1	Algebra 1	Introduction to algebra                                                                             	2019-10-19	500	51	3.0950396825396825	50
+2	Algebra 2	Some advanced topics on algebra                                                                     	2019-10-01	500	52	2.93069165682802046818	47
+3	Geometry	Learn geometry having fun                                                                           	2020-10-15	600	53	2.9301190476190476	44
+4	Trigonometry	Master trigonometry                                                                                 	2020-03-11	600	54	2.8079365079365079	33
+8	Microeconomics	Learn microeconomics                                                                                	2020-11-13	500	58	3.8981481481481481	8
 \.
 
 
@@ -3931,6 +4081,7 @@ COPY public.enrolled_courses (user_id, course_id, date_of_join) FROM stdin;
 50	1	2021-07-20
 50	2	2021-07-20
 5	5	2022-08-15
+1	3	2022-08-20
 \.
 
 
@@ -4207,12 +4358,12 @@ COPY public.teacher_specialities (teacher_id, speciality) FROM stdin;
 
 COPY public.teachers (user_id, date_of_join, credit, rate) FROM stdin;
 59	2021-03-13	0	3.3095238095238095
+51	2019-10-19	1000	3.0950396825396825
 55	2020-03-12	2800	3.1426767676767677
 56	2020-05-08	0	2.6458333333333333
 60	2021-05-15	0	3.5416666666666667
 54	2020-03-11	0	2.8079365079365079
 57	2020-10-16	0	3.5833333333333333
-51	2019-10-19	1000	3.0950396825396825
 53	2020-10-15	0	2.9301190476190476
 58	2020-11-13	0	3.8981481481481481
 52	2019-10-01	0	2.93069165682802046818
@@ -4442,6 +4593,13 @@ ALTER TABLE ONLY public.users
 --
 
 CREATE TRIGGER contents_rate_trigger AFTER INSERT OR DELETE OR UPDATE OF rate ON public.content_viewers FOR EACH ROW EXECUTE FUNCTION public.contents_rate_trigger();
+
+
+--
+-- Name: enrolled_courses courses_enroll_count_trigger; Type: TRIGGER; Schema: public; Owner: epathshala
+--
+
+CREATE TRIGGER courses_enroll_count_trigger AFTER INSERT OR DELETE OR UPDATE ON public.enrolled_courses FOR EACH ROW EXECUTE FUNCTION public.courses_enroll_count_trigger();
 
 
 --
