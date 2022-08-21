@@ -4,10 +4,9 @@ void GetCourseDetails(Json::Value &request, Json::Value &response, drogon::orm::
 {
     std::clog << "Get \"course-details\" request" << std::endl;
 
-    std::ifstream inputFileStream("./sql/get-course-details.sql");
     std::stringstream queryStream;
 
-    queryStream << inputFileStream.rdbuf();
+    queryStream.str("SELECT * FROM GET_COURSE_DETAILS($1)");
 
     std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), request["course_id"].asInt64());
 
