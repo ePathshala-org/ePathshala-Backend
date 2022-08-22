@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 14.3
--- Dumped by pg_dump version 14.3
+-- Dumped by pg_dump version 14.5
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -39,6 +39,58 @@ $$;
 
 
 ALTER FUNCTION public.check_student_enrolled(param_user_id bigint, param_course_id bigint) OWNER TO epathshala;
+
+--
+-- Name: conetent_view_complete_trigger(); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.conetent_view_complete_trigger() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	UPDATED_COURSE_ID BIGINT;
+BEGIN
+	SELECT COURSE_ID INTO UPDATED_COURSE_ID
+	FROM CONTENTS
+	WHERE CONTENT_ID = NEW.CONTENT_ID;
+	UPDATE COURSE_REMAIN_CONTENTS
+	SET
+		REMAIN_COUNT = REMAIN_COUNT - 1,
+		COMPLETE_COUNT = COMPLETE_COUNT + 1
+	WHERE USER_ID = NEW.USER_ID AND COURSE_ID = UPDATED_COURSE_ID;
+	RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.conetent_view_complete_trigger() OWNER TO epathshala;
+
+--
+-- Name: content_view_complete_trigger(); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.content_view_complete_trigger() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	UPDATED_COURSE_ID BIGINT;
+BEGIN
+	IF OLD.COMPLETED = FALSE AND NEW.COMPLETED = TRUE THEN
+		SELECT COURSE_ID INTO UPDATED_COURSE_ID
+		FROM CONTENTS
+		WHERE CONTENT_ID = NEW.CONTENT_ID;
+		UPDATE COURSE_REMAIN_CONTENTS
+		SET
+			REMAIN_COUNT = REMAIN_COUNT - 1,
+			COMPLETE_COUNT = COMPLETE_COUNT + 1
+		WHERE USER_ID = NEW.USER_ID AND COURSE_ID = UPDATED_COURSE_ID;
+	END IF;
+	RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.content_view_complete_trigger() OWNER TO epathshala;
 
 --
 -- Name: contents_rate_trigger(); Type: FUNCTION; Schema: public; Owner: epathshala
@@ -97,6 +149,29 @@ $$;
 
 
 ALTER FUNCTION public.contents_view_count_trigger() OWNER TO epathshala;
+
+--
+-- Name: course_enroll_insert_trigger(); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.course_enroll_insert_trigger() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	CONTENT_COUNT BIGINT;
+BEGIN
+	SELECT COUNT(*) INTO CONTENT_COUNT
+	FROM CONTENTS
+	WHERE COURSE_ID = NEW.COURSE_ID;
+	INSERT INTO COURSE_REMAIN_CONTENTS(USER_ID, COURSE_ID, REMAIN_COUNT)
+	VALUES
+	(NEW.USER_ID, NEW.COURSE_ID, CONTENT_COUNT);
+	RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.course_enroll_insert_trigger() OWNER TO epathshala;
 
 --
 -- Name: courses_enroll_count_trigger(); Type: FUNCTION; Schema: public; Owner: epathshala
@@ -172,6 +247,180 @@ $$;
 
 
 ALTER PROCEDURE public.enroll_student(IN param_student_id bigint, IN param_course_id bigint) OWNER TO epathshala;
+
+--
+-- Name: enrolled_courses_insert_trigger(); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.enrolled_courses_insert_trigger() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	CONTENT_COUNT BIGINT;
+BEGIN
+	SELECT COUNT(*) INTO CONTENT_COUNT
+	FROM CONTENTS
+	WHERE COURSE_ID = NEW.COURSE_ID;
+	INSERT INTO COURSE_REMAIN_CONTENTS(USER_ID, COURSE_ID, REMAIN_COUNT)
+	VALUES
+	(NEW.USER_ID, NEW.COURSE_ID, CONTENT_COUNT);
+	RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.enrolled_courses_insert_trigger() OWNER TO epathshala;
+
+--
+-- Name: get_course_contents_by_rate_asc(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_course_contents_by_rate_asc(param_course_id bigint) RETURNS TABLE(content_id bigint, title character varying, description character varying, rate numeric, date_of_creation date, content_type character varying, view_count bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT
+		CONTENTS.CONTENT_ID,
+		CONTENTS.TITLE,
+		TRIM(CONTENTS.DESCRIPTION)::VARCHAR,
+		CONTENTS.RATE::NUMERIC(3, 2),
+		CONTENTS.DATE_OF_CREATION,
+		TRIM(CONTENTS.CONTENT_TYPE)::VARCHAR,
+		CONTENTS.VIEW_COUNT
+	FROM 
+		CONTENTS
+	WHERE
+		COURSE_ID = PARAM_COURSE_ID
+	ORDER BY
+		RATE ASC;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_course_contents_by_rate_asc(param_course_id bigint) OWNER TO epathshala;
+
+--
+-- Name: get_course_contents_by_rate_desc(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_course_contents_by_rate_desc(param_course_id bigint) RETURNS TABLE(content_id bigint, title character varying, description character varying, rate numeric, date_of_creation date, content_type character varying, view_count bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT
+		CONTENTS.CONTENT_ID,
+		CONTENTS.TITLE,
+		TRIM(CONTENTS.DESCRIPTION)::VARCHAR,
+		CONTENTS.RATE::NUMERIC(3, 2),
+		CONTENTS.DATE_OF_CREATION,
+		TRIM(CONTENTS.CONTENT_TYPE)::VARCHAR,
+		CONTENTS.VIEW_COUNT
+	FROM 
+		CONTENTS
+	WHERE
+		COURSE_ID = PARAM_COURSE_ID
+	ORDER BY
+		RATE DESC;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_course_contents_by_rate_desc(param_course_id bigint) OWNER TO epathshala;
+
+--
+-- Name: get_course_contents_by_title_asc(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_course_contents_by_title_asc(param_course_id bigint) RETURNS TABLE(content_id bigint, title character varying, description character varying, rate numeric, date_of_creation date, content_type character varying, view_count bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT
+		CONTENTS.CONTENT_ID,
+		CONTENTS.TITLE,
+		TRIM(CONTENTS.DESCRIPTION)::VARCHAR,
+		CONTENTS.RATE::NUMERIC(3, 2),
+		CONTENTS.DATE_OF_CREATION,
+		TRIM(CONTENTS.CONTENT_TYPE)::VARCHAR,
+		CONTENTS.VIEW_COUNT
+	FROM 
+		CONTENTS
+	WHERE
+		COURSE_ID = PARAM_COURSE_ID
+	ORDER BY
+		TITLE ASC;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_course_contents_by_title_asc(param_course_id bigint) OWNER TO epathshala;
+
+--
+-- Name: get_course_contents_by_title_desc(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_course_contents_by_title_desc(param_course_id bigint) RETURNS TABLE(content_id bigint, title character varying, description character varying, rate numeric, date_of_creation date, content_type character varying, view_count bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT
+		CONTENTS.CONTENT_ID,
+		CONTENTS.TITLE,
+		TRIM(CONTENTS.DESCRIPTION)::VARCHAR,
+		CONTENTS.RATE::NUMERIC(3, 2),
+		CONTENTS.DATE_OF_CREATION,
+		TRIM(CONTENTS.CONTENT_TYPE)::VARCHAR,
+		CONTENTS.VIEW_COUNT
+	FROM 
+		CONTENTS
+	WHERE
+		COURSE_ID = PARAM_COURSE_ID
+	ORDER BY
+		TITLE DESC;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_course_contents_by_title_desc(param_course_id bigint) OWNER TO epathshala;
+
+--
+-- Name: get_course_details(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_course_details(param_course_id bigint) RETURNS TABLE(course_id bigint, title character varying, description character varying, date_of_creation date, price integer, creator_id bigint, creator_name character varying, rate numeric, enroll_count bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT COURSES.COURSE_ID, COURSES.TITLE, TRIM(COURSES.DESCRIPTION)::VARCHAR, COURSES.DATE_OF_CREATION, COURSES.PRICE, COURSES.CREATOR_ID, USERS.FULL_NAME, COURSES.RATE::NUMERIC(3, 2), COURSES.ENROLL_COUNT
+	FROM COURSES
+	JOIN USERS
+	ON(COURSES.CREATOR_ID = USERS.USER_ID)
+	WHERE COURSES.COURSE_ID = PARAM_COURSE_ID;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_course_details(param_course_id bigint) OWNER TO epathshala;
+
+--
+-- Name: get_course_remain_content(bigint, bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_course_remain_content(param_user_id bigint, param_course_id bigint) RETURNS bigint
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	TO_RETURN BIGINT;
+BEGIN
+	SELECT REMAIN_COUNT INTO TO_RETURN
+	FROM COURSE_REMAIN_CONTENTS
+	WHERE USER_ID = PARAM_USER_ID AND COURSE_ID = PARAM_COURSE_ID;
+	RETURN TO_RETURN;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_course_remain_content(param_user_id bigint, param_course_id bigint) OWNER TO epathshala;
 
 --
 -- Name: get_courses_by_enroll_count_asc(); Type: FUNCTION; Schema: public; Owner: epathshala
@@ -406,6 +655,121 @@ $$;
 ALTER FUNCTION public.get_new_user_id() OWNER TO epathshala;
 
 --
+-- Name: get_student_courses_by_rate_asc(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_student_courses_by_rate_asc(param_user_id bigint) RETURNS TABLE(course_id bigint, title character varying, description character varying, date_of_creation date, price integer, creator_id bigint, creator_name character varying, rate numeric, enroll_count bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT COURSES.COURSE_ID, COURSES.TITLE, TRIM(COURSES.DESCRIPTION)::VARCHAR, COURSES.DATE_OF_CREATION, COURSES.PRICE, COURSES.CREATOR_ID, USERS.FULL_NAME, COURSES.RATE::NUMERIC(3, 2), COURSES.ENROLL_COUNT
+	FROM COURSES
+	JOIN ENROLLED_COURSES
+	ON(COURSES.COURSE_ID = ENROLLED_COURSES.COURSE_ID)
+	JOIN USERS
+	ON(COURSES.CREATOR_ID = USERS.USER_ID)
+	WHERE ENROLLED_COURSES.USER_ID = PARAM_USER_ID
+	ORDER BY COURSES.RATE ASC;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_student_courses_by_rate_asc(param_user_id bigint) OWNER TO epathshala;
+
+--
+-- Name: get_student_courses_by_rate_desc(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_student_courses_by_rate_desc(param_user_id bigint) RETURNS TABLE(course_id bigint, title character varying, description character varying, date_of_creation date, price integer, creator_id bigint, creator_name character varying, rate numeric, enroll_count bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT COURSES.COURSE_ID, COURSES.TITLE, TRIM(COURSES.DESCRIPTION)::VARCHAR, COURSES.DATE_OF_CREATION, COURSES.PRICE, COURSES.CREATOR_ID, USERS.FULL_NAME, COURSES.RATE::NUMERIC(3, 2), COURSES.ENROLL_COUNT
+	FROM COURSES
+	JOIN ENROLLED_COURSES
+	ON(COURSES.COURSE_ID = ENROLLED_COURSES.COURSE_ID)
+	JOIN USERS
+	ON(COURSES.CREATOR_ID = USERS.USER_ID)
+	WHERE ENROLLED_COURSES.USER_ID = PARAM_USER_ID
+	ORDER BY COURSES.RATE DESC;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_student_courses_by_rate_desc(param_user_id bigint) OWNER TO epathshala;
+
+--
+-- Name: get_student_courses_by_title_asc(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_student_courses_by_title_asc(param_user_id bigint) RETURNS TABLE(course_id bigint, title character varying, description character varying, date_of_creation date, price integer, creator_id bigint, creator_name character varying, rate numeric, enroll_count bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT COURSES.COURSE_ID, COURSES.TITLE, TRIM(COURSES.DESCRIPTION)::VARCHAR, COURSES.DATE_OF_CREATION, COURSES.PRICE, COURSES.CREATOR_ID, USERS.FULL_NAME, COURSES.RATE::NUMERIC(3, 2), COURSES.ENROLL_COUNT
+	FROM COURSES
+	JOIN ENROLLED_COURSES
+	ON(COURSES.COURSE_ID = ENROLLED_COURSES.COURSE_ID)
+	JOIN USERS
+	ON(COURSES.CREATOR_ID = USERS.USER_ID)
+	WHERE ENROLLED_COURSES.USER_ID = PARAM_USER_ID
+	ORDER BY COURSES.TITLE ASC;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_student_courses_by_title_asc(param_user_id bigint) OWNER TO epathshala;
+
+--
+-- Name: get_student_courses_by_title_desc(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_student_courses_by_title_desc(param_user_id bigint) RETURNS TABLE(course_id bigint, title character varying, description character varying, date_of_creation date, price integer, creator_id bigint, creator_name character varying, rate numeric, enroll_count bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT COURSES.COURSE_ID, COURSES.TITLE, TRIM(COURSES.DESCRIPTION)::VARCHAR, COURSES.DATE_OF_CREATION, COURSES.PRICE, COURSES.CREATOR_ID, USERS.FULL_NAME, COURSES.RATE::NUMERIC(3, 2), COURSES.ENROLL_COUNT
+	FROM COURSES
+	JOIN ENROLLED_COURSES
+	ON(COURSES.COURSE_ID = ENROLLED_COURSES.COURSE_ID)
+	JOIN USERS
+	ON(COURSES.CREATOR_ID = USERS.USER_ID)
+	WHERE ENROLLED_COURSES.USER_ID = PARAM_USER_ID
+	ORDER BY COURSES.TITLE DESC;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_student_courses_by_title_desc(param_user_id bigint) OWNER TO epathshala;
+
+--
+-- Name: get_student_details(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_student_details(param_user_id bigint) RETURNS TABLE(user_id bigint, full_name character varying, date_of_birth date, bio character varying, email character varying, user_type character varying, date_of_join date, rank_point integer)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT 
+	    USERS.USER_ID, 
+	    USERS.FULL_NAME,  
+	    USERS.DATE_OF_BIRTH, 
+	    TRIM(USERS.BIO)::VARCHAR, 
+	    USERS.EMAIL, 
+	    USERS.USER_TYPE::VARCHAR, 
+	    STUDENTS.DATE_OF_JOIN, 
+	    STUDENTS.RANK_POINT
+	FROM USERS
+	JOIN STUDENTS
+	ON(USERS.USER_ID = STUDENTS.USER_ID)
+	WHERE USERS.USER_ID = PARAM_USER_ID;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_student_details(param_user_id bigint) OWNER TO epathshala;
+
+--
 -- Name: get_teacher_details(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
 --
 
@@ -444,6 +808,73 @@ $$;
 
 
 ALTER FUNCTION public.get_teacher_details(param_teacher_id bigint) OWNER TO epathshala;
+
+--
+-- Name: get_user_details(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_user_details(param_user_id bigint) RETURNS TABLE(user_id bigint, full_name character varying, date_of_birth date, bio character varying, email character varying, user_type character varying)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT USERS.USER_ID, USERS.FULL_NAME, USERS.DATE_OF_BIRTH, TRIM(USERS.BIO)::VARCHAR, USERS.EMAIL, TRIM(USERS.USER_TYPE)::VARCHAR
+	FROM USERS
+	WHERE USERS.USER_ID = PARAM_USER_ID;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_user_details(param_user_id bigint) OWNER TO epathshala;
+
+--
+-- Name: get_user_id(character varying, character varying, boolean); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_user_id(param_email character varying, param_security_key character varying, param_type boolean) RETURNS bigint
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	RETURN_USER_ID BIGINT;
+	USER_SECURITY_KEY VARCHAR;
+BEGIN
+	IF LENGTH(PARAM_EMAIL) = 0 THEN
+		RETURN -1;
+	END IF;
+	IF PARAM_EMAIL NOT LIKE '%_@_%.___' THEN
+		RETURN -2;
+	END IF;
+	IF LENGTH(PARAM_SECURITY_KEY) < 8 OR LENGTH(PARAM_SECURITY_KEY) > 32 THEN
+		RETURN -3;
+	END IF;
+	IF PARAM_TYPE THEN
+		SELECT USERS.USER_ID INTO RETURN_USER_ID
+		FROM USERS
+		JOIN STUDENTS
+		ON(USERS.USER_ID = STUDENTS.USER_ID)
+		WHERE EMAIL = PARAM_EMAIL;
+	ELSE
+		SELECT USERS.USER_ID INTO RETURN_USER_ID
+		FROM USERS
+		JOIN TEACHERS
+		ON(USERS.USER_ID = TEACHERS.USER_ID)
+		WHERE EMAIL = PARAM_EMAIL;
+	END IF;
+	IF RETURN_USER_ID IS NULL THEN
+		RETURN -4;
+	END IF;
+	SELECT SECURITY_KEY INTO USER_SECURITY_KEY
+	FROM USERS
+	WHERE USER_ID = RETURN_USER_ID;
+	IF USER_SECURITY_KEY = PARAM_SECURITY_KEY THEN
+		RETURN RETURN_USER_ID;
+	ELSE
+		RETURN -5;
+	END IF;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_user_id(param_email character varying, param_security_key character varying, param_type boolean) OWNER TO epathshala;
 
 --
 -- Name: insert_course(character varying, character varying, character varying); Type: FUNCTION; Schema: public; Owner: epathshala
@@ -843,6 +1274,22 @@ ALTER SEQUENCE public.contents_content_id_seq OWNED BY public.contents.content_i
 
 
 --
+-- Name: course_remain_contents; Type: TABLE; Schema: public; Owner: epathshala
+--
+
+CREATE TABLE public.course_remain_contents (
+    user_id bigint NOT NULL,
+    course_id bigint NOT NULL,
+    complete_count bigint DEFAULT 0,
+    remain_count bigint,
+    CONSTRAINT course_remain_contents_complete_count_check CHECK ((complete_count >= 0)),
+    CONSTRAINT course_remain_contents_remain_count_check CHECK ((remain_count >= 0))
+);
+
+
+ALTER TABLE public.course_remain_contents OWNER TO epathshala;
+
+--
 -- Name: course_tags; Type: TABLE; Schema: public; Owner: epathshala
 --
 
@@ -1015,7 +1462,6 @@ CREATE TABLE public.users (
     bio character(100) DEFAULT ''::bpchar,
     email character varying NOT NULL,
     user_type character(10) NOT NULL,
-    pfp boolean DEFAULT false,
     CONSTRAINT users_email_check CHECK (((email)::text ~~ '_%@_%.___'::text)),
     CONSTRAINT users_security_key_check CHECK ((length(security_key) >= 8)),
     CONSTRAINT users_user_id_check CHECK ((user_id > 0)),
@@ -1403,6 +1849,7 @@ COPY public.content_viewers (view_id, content_id, user_id, rate, completed) FROM
 1519	62	37	5	f
 1626	66	2	4	f
 2633	1	8	\N	f
+2634	78	3	\N	f
 1830	46	7	\N	f
 1219	93	8	\N	f
 1649	67	12	\N	f
@@ -2294,7 +2741,6 @@ COPY public.content_viewers (view_id, content_id, user_id, rate, completed) FROM
 2068	57	38	\N	f
 2070	57	40	\N	f
 2073	57	43	\N	f
-2082	78	3	\N	f
 2086	78	7	\N	f
 2096	78	17	\N	f
 2097	78	18	\N	f
@@ -3637,7 +4083,6 @@ COPY public.content_viewers (view_id, content_id, user_id, rate, completed) FROM
 150	2	27	\N	f
 513	15	14	\N	f
 1067	39	48	\N	f
-173	3	3	\N	f
 2084	78	5	\N	f
 2613	109	13	\N	f
 641	20	3	\N	f
@@ -3668,6 +4113,7 @@ COPY public.content_viewers (view_id, content_id, user_id, rate, completed) FROM
 1992	53	45	\N	f
 675	21	4	\N	f
 1193	92	21	\N	f
+173	3	3	\N	f
 965	33	10	\N	f
 1000	34	32	\N	f
 2611	109	11	\N	f
@@ -3724,11 +4170,11 @@ COPY public.contents (content_id, date_of_creation, content_type, title, descrip
 76	2020-10-15	QUIZ      	Translate points	Description of quiz 'Translate points'                                                              	3	3.1428571428571429	40
 91	2020-03-12	VIDEO     	Creating a histogram	Description of video 'Creating a histogram'                                                         	5	4.0000000000000000	1
 95	2020-05-08	VIDEO     	Identifying individuals, variables and catagorical variables in a data set	Description of video 'Identifying individuals, variables and catagorical variables in a data set'   	6	4.0000000000000000	30
-3	2019-10-19	VIDEO     	The beauty of algebra	Description of video 'The beauty of algebra'                                                        	1	4.0000000000000000	19
 5	2019-10-19	VIDEO     	Intro to the coordinate plane	Description of video 'Intro to the coordinate plane'                                                	1	2.5000000000000000	15
 7	2019-10-19	VIDEO     	What is a variable?	Description of video 'What is a variable?'                                                          	1	3.8000000000000000	22
 8	2019-10-19	VIDEO     	Why aren't we using the multiplication sign?	Description of video 'Why aren't we using the multiplication sign?'                                 	1	3.5714285714285714	32
 12	2019-10-19	VIDEO     	Evaluating expressions with two variables	Description of video 'Evaluating expressions with two variables'                                    	1	3.4444444444444444	46
+3	2019-10-19	VIDEO     	The beauty of algebra	Description of video 'The beauty of algebra'                                                        	1	4.0000000000000000	19
 14	2019-10-19	VIDEO     	Evaluating expressions with two variables: fractions & decimals	Description of video 'Evaluating expressions with two variables: fractions & decimals'              	1	3.1428571428571429	44
 46	2019-10-01	QUIZ      	Multiply monomials	Description of quiz 'Multiply monomials'                                                            	2	2.7500000000000000	25
 50	2019-10-01	VIDEO     	Multiply binomials by polynomials	Description of video 'Multiply binomials by polynomials'                                            	2	3.3333333333333333	27
@@ -3812,6 +4258,14 @@ COPY public.contents (content_id, date_of_creation, content_type, title, descrip
 
 
 --
+-- Data for Name: course_remain_contents; Type: TABLE DATA; Schema: public; Owner: epathshala
+--
+
+COPY public.course_remain_contents (user_id, course_id, complete_count, remain_count) FROM stdin;
+\.
+
+
+--
 -- Data for Name: course_tags; Type: TABLE DATA; Schema: public; Owner: epathshala
 --
 
@@ -3843,10 +4297,10 @@ COPY public.courses (course_id, title, description, date_of_creation, price, cre
 5	Statistics	Learn statistics basics                                                                             	2020-03-12	700	55	3.1426767676767677	30
 10	Macroeconomics	Learn macroeconomics                                                                                	2021-05-15	500	60	3.5416666666666667	1
 2	Algebra 2	Some advanced topics on algebra                                                                     	2019-10-01	500	52	2.93069165682802046818	47
-3	Geometry	Learn geometry having fun                                                                           	2020-10-15	600	53	2.9301190476190476	44
 4	Trigonometry	Master trigonometry                                                                                 	2020-03-11	600	54	2.8079365079365079	33
 8	Microeconomics	Learn microeconomics                                                                                	2020-11-13	500	58	3.8981481481481481	8
 1	Algebra 1	Introduction to algebra                                                                             	2019-10-19	500	51	3.0950396825396825	50
+3	Geometry	Learn geometry having fun                                                                           	2020-10-15	600	53	2.9301190476190476	44
 \.
 
 
@@ -4384,12 +4838,12 @@ COPY public.teacher_specialities (teacher_id, speciality) FROM stdin;
 COPY public.teachers (user_id, date_of_join, credit, rate) FROM stdin;
 59	2021-03-13	0	3.3095238095238095
 51	2019-10-19	1000	3.0950396825396825
+53	2020-10-15	0	2.9301190476190476
 55	2020-03-12	2800	3.1426767676767677
 56	2020-05-08	0	2.6458333333333333
 60	2021-05-15	0	3.5416666666666667
 54	2020-03-11	0	2.8079365079365079
 57	2020-10-16	0	3.5833333333333333
-53	2020-10-15	0	2.9301190476190476
 58	2020-11-13	0	3.8981481481481481
 52	2019-10-01	0	2.93069165682802046818
 \.
@@ -4399,68 +4853,68 @@ COPY public.teachers (user_id, date_of_join, credit, rate) FROM stdin;
 -- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: epathshala
 --
 
-COPY public.users (user_id, full_name, security_key, date_of_birth, bio, email, user_type, pfp) FROM stdin;
-2	Marisol Hicks	12345678                        	1997-11-04	                                                                                                    	marisol445@gmail.com	STUDENT   	f
-3	Jose Sylvester	12345678                        	2000-03-06	                                                                                                    	jose7038@gmail.com	STUDENT   	f
-4	William Adams	12345678                        	1993-11-21	                                                                                                    	william2284@gmail.com	STUDENT   	f
-6	Ashley Langston	12345678                        	1980-03-27	                                                                                                    	ashley932@gmail.com	STUDENT   	f
-7	Allyson Moschetti	12345678                        	1997-12-05	                                                                                                    	allyson3467@gmail.com	STUDENT   	f
-8	Dolores White	12345678                        	1994-09-24	                                                                                                    	dolores2369@gmail.com	STUDENT   	f
-9	Dorothy Alford	12345678                        	1998-01-04	                                                                                                    	dorothy1775@gmail.com	STUDENT   	f
-10	Beth Smith	12345678                        	1997-09-18	                                                                                                    	beth3902@gmail.com	STUDENT   	f
-11	Lila Crawford	12345678                        	1983-10-20	                                                                                                    	lila6053@gmail.com	STUDENT   	f
-12	Devon Steger	12345678                        	1991-06-09	                                                                                                    	devon1321@gmail.com	STUDENT   	f
-13	Al Lynch	12345678                        	1989-07-24	                                                                                                    	al8986@gmail.com	STUDENT   	f
-14	Joi Bellefeuille	12345678                        	1992-11-17	                                                                                                    	joi6193@gmail.com	STUDENT   	f
-15	Kimberly Toler	12345678                        	1981-04-06	                                                                                                    	kimberly1991@gmail.com	STUDENT   	f
-16	Tonya Harris	12345678                        	1998-03-20	                                                                                                    	tonya6665@gmail.com	STUDENT   	f
-17	Joseph Sharp	12345678                        	1993-12-28	                                                                                                    	joseph7068@gmail.com	STUDENT   	f
-18	Carrie Andrew	12345678                        	1987-09-24	                                                                                                    	carrie7877@gmail.com	STUDENT   	f
-19	Louis Laster	12345678                        	1989-01-12	                                                                                                    	louis9310@gmail.com	STUDENT   	f
-20	Dustin Coppinger	12345678                        	1997-11-25	                                                                                                    	dustin8186@gmail.com	STUDENT   	f
-21	Hilario Skrine	12345678                        	1995-12-05	                                                                                                    	hilario581@gmail.com	STUDENT   	f
-22	Crystal Warnick	12345678                        	1992-10-03	                                                                                                    	crystal478@gmail.com	STUDENT   	f
-23	Mamie Richmond	12345678                        	1991-12-04	                                                                                                    	mamie4456@gmail.com	STUDENT   	f
-24	Bryan Harker	12345678                        	1984-10-04	                                                                                                    	bryan305@gmail.com	STUDENT   	f
-25	Deborah Kachmarsky	12345678                        	1987-06-06	                                                                                                    	deborah8755@gmail.com	STUDENT   	f
-26	Sharon Valcourt	12345678                        	1999-03-26	                                                                                                    	sharon6716@gmail.com	STUDENT   	f
-27	Steven Hawkins	12345678                        	1992-05-09	                                                                                                    	steven6322@gmail.com	STUDENT   	f
-28	Michael Ellis	12345678                        	1988-01-02	                                                                                                    	michael3105@gmail.com	STUDENT   	f
-29	Willie Vieira	12345678                        	1985-07-01	                                                                                                    	willie8026@gmail.com	STUDENT   	f
-30	Shari Swartz	12345678                        	1982-09-26	                                                                                                    	shari875@gmail.com	STUDENT   	f
-31	Thomas Caraballo	12345678                        	1990-01-03	                                                                                                    	thomas476@gmail.com	STUDENT   	f
-32	Sharon Acker	12345678                        	1988-11-26	                                                                                                    	sharon5866@gmail.com	STUDENT   	f
-33	James Thomas	12345678                        	1984-08-02	                                                                                                    	james8865@gmail.com	STUDENT   	f
-1	Mary Prezzia	12345678                        	1986-02-25	                                                                                                    	mary1151@gmail.com	STUDENT   	f
-34	Reginald Contreras	12345678                        	1992-07-17	                                                                                                    	reginald5090@gmail.com	STUDENT   	f
-35	Robert Gartin	12345678                        	1999-02-15	                                                                                                    	robert2831@gmail.com	STUDENT   	f
-36	Sharon Gamino	12345678                        	1999-11-17	                                                                                                    	sharon1938@gmail.com	STUDENT   	f
-37	Cynthia Gonzalez	12345678                        	1989-05-05	                                                                                                    	cynthia6438@gmail.com	STUDENT   	f
-38	Brent Clower	12345678                        	1998-05-18	                                                                                                    	brent4149@gmail.com	STUDENT   	f
-39	Philip Vanderloo	12345678                        	1985-05-13	                                                                                                    	philip6560@gmail.com	STUDENT   	f
-40	Tana Kinloch	12345678                        	1995-05-24	                                                                                                    	tana6370@gmail.com	STUDENT   	f
-41	Maria Summer	12345678                        	1981-10-16	                                                                                                    	maria1475@gmail.com	STUDENT   	f
-42	Douglas Mcgowan	12345678                        	1992-05-09	                                                                                                    	douglas2320@gmail.com	STUDENT   	f
-43	Noah Jamerson	12345678                        	1984-02-25	                                                                                                    	noah2915@gmail.com	STUDENT   	f
-44	Helen Burton	12345678                        	1993-03-18	                                                                                                    	helen2377@gmail.com	STUDENT   	f
-45	Crystal Hamby	12345678                        	1986-10-08	                                                                                                    	crystal1815@gmail.com	STUDENT   	f
-46	Glen Basista	12345678                        	1997-12-27	                                                                                                    	glen3930@gmail.com	STUDENT   	f
-47	Rodney Wolfe	12345678                        	1988-05-10	                                                                                                    	rodney23@gmail.com	STUDENT   	f
-48	Lori Gilmore	12345678                        	1986-01-07	                                                                                                    	lori8056@gmail.com	STUDENT   	f
-49	Kristina Shriver	12345678                        	1996-11-06	                                                                                                    	kristina8057@gmail.com	STUDENT   	f
-50	William Kish	12345678                        	1993-12-07	                                                                                                    	william3749@gmail.com	STUDENT   	f
-51	Martha Marbley	12345678                        	1986-05-26	                                                                                                    	martha4381@gmail.com	TEACHER   	f
-52	Carolyn Watkins	12345678                        	2000-06-12	                                                                                                    	carolyn8065@gmail.com	TEACHER   	f
-53	Diane Jones	12345678                        	1998-06-24	                                                                                                    	diane6212@gmail.com	TEACHER   	f
-54	Helena Nolder	12345678                        	1992-11-09	                                                                                                    	helena1754@gmail.com	TEACHER   	f
-55	Mike Mills	12345678                        	1985-11-09	                                                                                                    	mike7179@gmail.com	TEACHER   	f
-56	Charles Wiltberger	12345678                        	1982-09-21	                                                                                                    	charles2480@gmail.com	TEACHER   	f
-57	Henry Depalma	12345678                        	1993-06-27	                                                                                                    	henry4121@gmail.com	TEACHER   	f
-60	Pamela Pemberton	12345678                        	1981-02-21	                                                                                                    	pamela4346@gmail.com	TEACHER   	f
-58	Mario Barnett	12345678                        	1998-02-23	                                                                                                    	mario4755@gmail.com	TEACHER   	f
-59	Hubert Rodriguez	12345678                        	1988-11-19	                                                                                                    	hubert3151@gmail.com	TEACHER   	f
-5	Michelle Kimmell	12345678                        	1992-01-01	                                                                                                    	michelle2802@gmail.com	STUDENT   	f
-61	Mustafa Siam Ur Rafique	87654321                        	2000-10-16	Hehe                                                                                                	siam11651@outlook.com	STUDENT   	f
+COPY public.users (user_id, full_name, security_key, date_of_birth, bio, email, user_type) FROM stdin;
+2	Marisol Hicks	12345678                        	1997-11-04	                                                                                                    	marisol445@gmail.com	STUDENT   
+3	Jose Sylvester	12345678                        	2000-03-06	                                                                                                    	jose7038@gmail.com	STUDENT   
+4	William Adams	12345678                        	1993-11-21	                                                                                                    	william2284@gmail.com	STUDENT   
+6	Ashley Langston	12345678                        	1980-03-27	                                                                                                    	ashley932@gmail.com	STUDENT   
+7	Allyson Moschetti	12345678                        	1997-12-05	                                                                                                    	allyson3467@gmail.com	STUDENT   
+8	Dolores White	12345678                        	1994-09-24	                                                                                                    	dolores2369@gmail.com	STUDENT   
+9	Dorothy Alford	12345678                        	1998-01-04	                                                                                                    	dorothy1775@gmail.com	STUDENT   
+10	Beth Smith	12345678                        	1997-09-18	                                                                                                    	beth3902@gmail.com	STUDENT   
+11	Lila Crawford	12345678                        	1983-10-20	                                                                                                    	lila6053@gmail.com	STUDENT   
+12	Devon Steger	12345678                        	1991-06-09	                                                                                                    	devon1321@gmail.com	STUDENT   
+13	Al Lynch	12345678                        	1989-07-24	                                                                                                    	al8986@gmail.com	STUDENT   
+14	Joi Bellefeuille	12345678                        	1992-11-17	                                                                                                    	joi6193@gmail.com	STUDENT   
+15	Kimberly Toler	12345678                        	1981-04-06	                                                                                                    	kimberly1991@gmail.com	STUDENT   
+16	Tonya Harris	12345678                        	1998-03-20	                                                                                                    	tonya6665@gmail.com	STUDENT   
+17	Joseph Sharp	12345678                        	1993-12-28	                                                                                                    	joseph7068@gmail.com	STUDENT   
+18	Carrie Andrew	12345678                        	1987-09-24	                                                                                                    	carrie7877@gmail.com	STUDENT   
+19	Louis Laster	12345678                        	1989-01-12	                                                                                                    	louis9310@gmail.com	STUDENT   
+20	Dustin Coppinger	12345678                        	1997-11-25	                                                                                                    	dustin8186@gmail.com	STUDENT   
+21	Hilario Skrine	12345678                        	1995-12-05	                                                                                                    	hilario581@gmail.com	STUDENT   
+22	Crystal Warnick	12345678                        	1992-10-03	                                                                                                    	crystal478@gmail.com	STUDENT   
+23	Mamie Richmond	12345678                        	1991-12-04	                                                                                                    	mamie4456@gmail.com	STUDENT   
+24	Bryan Harker	12345678                        	1984-10-04	                                                                                                    	bryan305@gmail.com	STUDENT   
+25	Deborah Kachmarsky	12345678                        	1987-06-06	                                                                                                    	deborah8755@gmail.com	STUDENT   
+26	Sharon Valcourt	12345678                        	1999-03-26	                                                                                                    	sharon6716@gmail.com	STUDENT   
+27	Steven Hawkins	12345678                        	1992-05-09	                                                                                                    	steven6322@gmail.com	STUDENT   
+28	Michael Ellis	12345678                        	1988-01-02	                                                                                                    	michael3105@gmail.com	STUDENT   
+29	Willie Vieira	12345678                        	1985-07-01	                                                                                                    	willie8026@gmail.com	STUDENT   
+30	Shari Swartz	12345678                        	1982-09-26	                                                                                                    	shari875@gmail.com	STUDENT   
+31	Thomas Caraballo	12345678                        	1990-01-03	                                                                                                    	thomas476@gmail.com	STUDENT   
+32	Sharon Acker	12345678                        	1988-11-26	                                                                                                    	sharon5866@gmail.com	STUDENT   
+33	James Thomas	12345678                        	1984-08-02	                                                                                                    	james8865@gmail.com	STUDENT   
+1	Mary Prezzia	12345678                        	1986-02-25	                                                                                                    	mary1151@gmail.com	STUDENT   
+34	Reginald Contreras	12345678                        	1992-07-17	                                                                                                    	reginald5090@gmail.com	STUDENT   
+35	Robert Gartin	12345678                        	1999-02-15	                                                                                                    	robert2831@gmail.com	STUDENT   
+36	Sharon Gamino	12345678                        	1999-11-17	                                                                                                    	sharon1938@gmail.com	STUDENT   
+37	Cynthia Gonzalez	12345678                        	1989-05-05	                                                                                                    	cynthia6438@gmail.com	STUDENT   
+38	Brent Clower	12345678                        	1998-05-18	                                                                                                    	brent4149@gmail.com	STUDENT   
+39	Philip Vanderloo	12345678                        	1985-05-13	                                                                                                    	philip6560@gmail.com	STUDENT   
+40	Tana Kinloch	12345678                        	1995-05-24	                                                                                                    	tana6370@gmail.com	STUDENT   
+41	Maria Summer	12345678                        	1981-10-16	                                                                                                    	maria1475@gmail.com	STUDENT   
+42	Douglas Mcgowan	12345678                        	1992-05-09	                                                                                                    	douglas2320@gmail.com	STUDENT   
+43	Noah Jamerson	12345678                        	1984-02-25	                                                                                                    	noah2915@gmail.com	STUDENT   
+44	Helen Burton	12345678                        	1993-03-18	                                                                                                    	helen2377@gmail.com	STUDENT   
+45	Crystal Hamby	12345678                        	1986-10-08	                                                                                                    	crystal1815@gmail.com	STUDENT   
+46	Glen Basista	12345678                        	1997-12-27	                                                                                                    	glen3930@gmail.com	STUDENT   
+47	Rodney Wolfe	12345678                        	1988-05-10	                                                                                                    	rodney23@gmail.com	STUDENT   
+48	Lori Gilmore	12345678                        	1986-01-07	                                                                                                    	lori8056@gmail.com	STUDENT   
+49	Kristina Shriver	12345678                        	1996-11-06	                                                                                                    	kristina8057@gmail.com	STUDENT   
+50	William Kish	12345678                        	1993-12-07	                                                                                                    	william3749@gmail.com	STUDENT   
+51	Martha Marbley	12345678                        	1986-05-26	                                                                                                    	martha4381@gmail.com	TEACHER   
+52	Carolyn Watkins	12345678                        	2000-06-12	                                                                                                    	carolyn8065@gmail.com	TEACHER   
+53	Diane Jones	12345678                        	1998-06-24	                                                                                                    	diane6212@gmail.com	TEACHER   
+54	Helena Nolder	12345678                        	1992-11-09	                                                                                                    	helena1754@gmail.com	TEACHER   
+55	Mike Mills	12345678                        	1985-11-09	                                                                                                    	mike7179@gmail.com	TEACHER   
+56	Charles Wiltberger	12345678                        	1982-09-21	                                                                                                    	charles2480@gmail.com	TEACHER   
+57	Henry Depalma	12345678                        	1993-06-27	                                                                                                    	henry4121@gmail.com	TEACHER   
+60	Pamela Pemberton	12345678                        	1981-02-21	                                                                                                    	pamela4346@gmail.com	TEACHER   
+58	Mario Barnett	12345678                        	1998-02-23	                                                                                                    	mario4755@gmail.com	TEACHER   
+59	Hubert Rodriguez	12345678                        	1988-11-19	                                                                                                    	hubert3151@gmail.com	TEACHER   
+5	Michelle Kimmell	12345678                        	1992-01-01	                                                                                                    	michelle2802@gmail.com	STUDENT   
+61	Mustafa Siam Ur Rafique	87654321                        	2000-10-16	Hehe                                                                                                	siam11651@outlook.com	STUDENT   
 \.
 
 
@@ -4515,6 +4969,14 @@ ALTER TABLE ONLY public.content_viewers
 
 ALTER TABLE ONLY public.contents
     ADD CONSTRAINT contents_pkey PRIMARY KEY (content_id);
+
+
+--
+-- Name: course_remain_contents course_remain_contents_pkey; Type: CONSTRAINT; Schema: public; Owner: epathshala
+--
+
+ALTER TABLE ONLY public.course_remain_contents
+    ADD CONSTRAINT course_remain_contents_pkey PRIMARY KEY (user_id, course_id);
 
 
 --
@@ -4614,6 +5076,13 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: content_viewers content_view_complete_trigger; Type: TRIGGER; Schema: public; Owner: epathshala
+--
+
+CREATE TRIGGER content_view_complete_trigger AFTER UPDATE OF completed ON public.content_viewers FOR EACH ROW EXECUTE FUNCTION public.content_view_complete_trigger();
+
+
+--
 -- Name: content_viewers contents_rate_trigger; Type: TRIGGER; Schema: public; Owner: epathshala
 --
 
@@ -4639,6 +5108,13 @@ CREATE TRIGGER courses_enroll_count_trigger AFTER INSERT OR DELETE OR UPDATE ON 
 --
 
 CREATE TRIGGER courses_rate_trigger AFTER INSERT OR DELETE OR UPDATE OF rate ON public.contents FOR EACH ROW EXECUTE FUNCTION public.courses_rate_trigger();
+
+
+--
+-- Name: enrolled_courses enrolled_courses_insert_trigger; Type: TRIGGER; Schema: public; Owner: epathshala
+--
+
+CREATE TRIGGER enrolled_courses_insert_trigger AFTER INSERT ON public.enrolled_courses FOR EACH ROW EXECUTE FUNCTION public.enrolled_courses_insert_trigger();
 
 
 --
@@ -4693,6 +5169,22 @@ ALTER TABLE ONLY public.content_viewers
 
 ALTER TABLE ONLY public.contents
     ADD CONSTRAINT contents_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(course_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: course_remain_contents course_remain_contents_course_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: epathshala
+--
+
+ALTER TABLE ONLY public.course_remain_contents
+    ADD CONSTRAINT course_remain_contents_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(course_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: course_remain_contents course_remain_contents_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: epathshala
+--
+
+ALTER TABLE ONLY public.course_remain_contents
+    ADD CONSTRAINT course_remain_contents_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --

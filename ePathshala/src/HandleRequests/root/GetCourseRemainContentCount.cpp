@@ -4,10 +4,9 @@ void GetCourseRemainContentCount(Json::Value &request, Json::Value &response, dr
 {
     std::clog << "Get \"course-remain-content-count\" request" << std::endl;
 
-    std::ifstream inputFileStream("./sql/get-course-remain-content-count.sql");
     std::stringstream queryStream;
 
-    queryStream << inputFileStream.rdbuf();
+    queryStream.str("SELECT GET_COURSE_REMAIN_CONTENT($1, $2) AS CONTENT_COUNT");
 
     std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), request["user_id"].asString(), request["course_id"].asString());
 

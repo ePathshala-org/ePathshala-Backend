@@ -4,10 +4,9 @@ void GetUserDetails(Json::Value &request, Json::Value &response, drogon::orm::Db
 {
     std::clog << "Get \"user-details\" request" << std::endl;
 
-    std::ifstream inputFileStream("./sql/get-user-details.sql");
     std::stringstream queryStream;
 
-    queryStream << inputFileStream.rdbuf();
+    queryStream.str("SELECT * FROM GET_USER_DETAILS($1)");
 
     std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), request["user_id"].asInt64());
 
