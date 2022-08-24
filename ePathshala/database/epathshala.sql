@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 14.3
+-- Dumped from database version 14.5
 -- Dumped by pg_dump version 14.5
 
 SET statement_timeout = 0;
@@ -232,6 +232,22 @@ $$;
 ALTER FUNCTION public.courses_rate_trigger() OWNER TO epathshala;
 
 --
+-- Name: delete_comment(bigint); Type: PROCEDURE; Schema: public; Owner: epathshala
+--
+
+CREATE PROCEDURE public.delete_comment(IN param_comment_id bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	DELETE FROM COMMENTS
+	WHERE COMMENT_ID = PARAM_COMMENT_ID;
+END;
+$$;
+
+
+ALTER PROCEDURE public.delete_comment(IN param_comment_id bigint) OWNER TO epathshala;
+
+--
 -- Name: enroll_student(bigint, bigint); Type: PROCEDURE; Schema: public; Owner: epathshala
 --
 
@@ -270,6 +286,146 @@ $$;
 
 
 ALTER FUNCTION public.enrolled_courses_insert_trigger() OWNER TO epathshala;
+
+--
+-- Name: get_comments_by_rate_asc(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_comments_by_rate_asc(param_content_id bigint) RETURNS TABLE(comment_id bigint, content_id bigint, commenter_id bigint, commenter_name character varying, description character varying, time_of_comment time with time zone, date_of_comment date, rate numeric)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT
+		COMMENTS.COMMENT_ID,
+		COMMENTS.CONTENT_ID,
+		COMMENTS.COMMENTER_ID,
+		USERS.FULL_NAME,
+		TRIM(COMMENTS.DESCRIPTION)::VARCHAR,
+		COMMENTS.TIME::TIME(0) WITH TIME ZONE,
+		COMMENTS.DATE,
+		COMMENTS.RATE::NUMERIC(3, 1)
+	FROM COMMENTS
+	JOIN USERS
+	ON (COMMENTS.COMMENTER_ID = USERS.USER_ID)
+	WHERE COMMENTS.CONTENT_ID = PARAM_CONTENT_ID
+	ORDER BY COMMENTS.RATE ASC;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_comments_by_rate_asc(param_content_id bigint) OWNER TO epathshala;
+
+--
+-- Name: get_comments_by_rate_desc(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_comments_by_rate_desc(param_content_id bigint) RETURNS TABLE(comment_id bigint, content_id bigint, commenter_id bigint, commenter_name character varying, description character varying, time_of_comment time with time zone, date_of_comment date, rate numeric)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT
+		COMMENTS.COMMENT_ID,
+		COMMENTS.CONTENT_ID,
+		COMMENTS.COMMENTER_ID,
+		USERS.FULL_NAME,
+		TRIM(COMMENTS.DESCRIPTION)::VARCHAR,
+		COMMENTS.TIME::TIME(0) WITH TIME ZONE,
+		COMMENTS.DATE,
+		COMMENTS.RATE::NUMERIC(3, 1)
+	FROM COMMENTS
+	JOIN USERS
+	ON (COMMENTS.COMMENTER_ID = USERS.USER_ID)
+	WHERE COMMENTS.CONTENT_ID = PARAM_CONTENT_ID
+	ORDER BY COMMENTS.RATE DESC;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_comments_by_rate_desc(param_content_id bigint) OWNER TO epathshala;
+
+--
+-- Name: get_comments_by_time_asc(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_comments_by_time_asc(param_content_id bigint) RETURNS TABLE(comment_id bigint, content_id bigint, commenter_id bigint, commenter_name character varying, description character varying, time_of_comment time with time zone, date_of_comment date, rate numeric)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT
+		COMMENTS.COMMENT_ID,
+		COMMENTS.CONTENT_ID,
+		COMMENTS.COMMENTER_ID,
+		USERS.FULL_NAME,
+		TRIM(COMMENTS.DESCRIPTION)::VARCHAR,
+		COMMENTS.TIME::TIME(0) WITH TIME ZONE,
+		COMMENTS.DATE,
+		COMMENTS.RATE::NUMERIC(3, 1)
+	FROM COMMENTS
+	JOIN USERS
+	ON (COMMENTS.COMMENTER_ID = USERS.USER_ID)
+	WHERE COMMENTS.CONTENT_ID = PARAM_CONTENT_ID
+	ORDER BY COMMENTS.DATE ASC, COMMENTS.TIME ASC;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_comments_by_time_asc(param_content_id bigint) OWNER TO epathshala;
+
+--
+-- Name: get_comments_by_time_desc(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_comments_by_time_desc(param_content_id bigint) RETURNS TABLE(comment_id bigint, content_id bigint, commenter_id bigint, commenter_name character varying, description character varying, time_of_comment time with time zone, date_of_comment date, rate numeric)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT
+		COMMENTS.COMMENT_ID,
+		COMMENTS.CONTENT_ID,
+		COMMENTS.COMMENTER_ID,
+		USERS.FULL_NAME,
+		TRIM(COMMENTS.DESCRIPTION)::VARCHAR,
+		COMMENTS.TIME::TIME(0) WITH TIME ZONE,
+		COMMENTS.DATE,
+		COMMENTS.RATE::NUMERIC(3, 1)
+	FROM COMMENTS
+	JOIN USERS
+	ON (COMMENTS.COMMENTER_ID = USERS.USER_ID)
+	WHERE COMMENTS.CONTENT_ID = PARAM_CONTENT_ID
+	ORDER BY COMMENTS.DATE DESC, COMMENTS.TIME DESC;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_comments_by_time_desc(param_content_id bigint) OWNER TO epathshala;
+
+--
+-- Name: get_content_details(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_content_details(param_content_id bigint) RETURNS TABLE(content_id bigint, date_of_creation date, content_type character varying, rate numeric, title character varying, description character varying, course_id bigint, course_name character varying, view_count bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT
+		CONTENTS.CONTENT_ID,
+		CONTENTS.DATE_OF_CREATION,
+		TRIM(CONTENTS.CONTENT_TYPE)::VARCHAR,
+		CONTENTS.RATE::NUMERIC(3, 2),
+		CONTENTS.TITLE,
+		TRIM(CONTENTS.DESCRIPTION)::VARCHAR,
+		COURSES.COURSE_ID,
+		COURSES.TITLE,
+		CONTENTS.VIEW_COUNT
+	FROM CONTENTS
+	JOIN COURSES
+	ON (CONTENTS.COURSE_ID = COURSES.COURSE_ID)
+	WHERE CONTENTS.CONTENT_ID = PARAM_CONTENT_ID;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_content_details(param_content_id bigint) OWNER TO epathshala;
 
 --
 -- Name: get_course_contents_by_rate_asc(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
@@ -589,6 +745,38 @@ $$;
 
 
 ALTER FUNCTION public.get_courses_teacher(param_teacher_id bigint) OWNER TO epathshala;
+
+--
+-- Name: get_new_comment_id(); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_new_comment_id() RETURNS bigint
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	MAX_COMMENT_ID BIGINT;
+	NEW_COMMENT_ID BIGINT;
+BEGIN
+	SELECT MAX(COMMENT_ID) INTO MAX_COMMENT_ID
+	FROM COMMENTS;
+	IF MAX_COMMENT_ID IS NULL THEN
+		RETURN 1;
+	ELSE
+		FOR I IN 1..MAX_COMMENT_ID LOOP
+			SELECT COMMENT_ID INTO NEW_COMMENT_ID
+			FROM COMMENTS
+			WHERE COMMENT_ID = I;
+			IF NEW_COMMENT_ID IS NULL THEN
+				RETURN I;
+			END IF;
+		END LOOP;
+		RETURN MAX_COMMENT_ID + 1;
+	END IF;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_new_comment_id() OWNER TO epathshala;
 
 --
 -- Name: get_new_course_id(); Type: FUNCTION; Schema: public; Owner: epathshala
@@ -1080,6 +1268,26 @@ $$;
 ALTER PROCEDURE public.pay_course_teacher_credit(IN param_course_id bigint, IN param_amount integer) OWNER TO epathshala;
 
 --
+-- Name: post_comment(bigint, bigint, character varying); Type: PROCEDURE; Schema: public; Owner: epathshala
+--
+
+CREATE PROCEDURE public.post_comment(IN param_user_id bigint, IN param_content_id bigint, IN param_description character varying)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	NEW_COMMENT_ID BIGINT;
+BEGIN
+	NEW_COMMENT_ID := GET_NEW_COMMENT_ID();
+	INSERT INTO COMMENTS (COMMENT_ID, CONTENT_ID, COMMENTER_ID, DESCRIPTION)
+	VALUES
+		(NEW_COMMENT_ID, PARAM_CONTENT_ID, PARAM_USER_ID, PARAM_DESCRIPTION);
+END;
+$$;
+
+
+ALTER PROCEDURE public.post_comment(IN param_user_id bigint, IN param_content_id bigint, IN param_description character varying) OWNER TO epathshala;
+
+--
 -- Name: print(character varying); Type: PROCEDURE; Schema: public; Owner: epathshala
 --
 
@@ -1122,6 +1330,40 @@ $$;
 
 
 ALTER FUNCTION public.teachers_rate_trigger() OWNER TO epathshala;
+
+--
+-- Name: update_comment(bigint, character varying); Type: PROCEDURE; Schema: public; Owner: epathshala
+--
+
+CREATE PROCEDURE public.update_comment(IN param_comment_id bigint, IN param_description character varying)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	UPDATE COMMENTS
+	SET DESCRIPTION = PARAM_DESCRIPTION
+	WHERE COMMENT_ID = PARAM_COMMENT_ID;
+END;
+$$;
+
+
+ALTER PROCEDURE public.update_comment(IN param_comment_id bigint, IN param_description character varying) OWNER TO epathshala;
+
+--
+-- Name: update_comment_rate(bigint, numeric); Type: PROCEDURE; Schema: public; Owner: epathshala
+--
+
+CREATE PROCEDURE public.update_comment_rate(IN param_comment_id bigint, IN param_rate numeric)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	UPDATE COMMENTS
+	SET RATE = PARAM_RATE
+	WHERE COMMENT_ID = PARAM_COMMENT_ID;
+END;
+$$;
+
+
+ALTER PROCEDURE public.update_comment_rate(IN param_comment_id bigint, IN param_rate numeric) OWNER TO epathshala;
 
 --
 -- Name: update_user_details(bigint, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: public; Owner: epathshala
@@ -1495,7 +1737,8 @@ COPY public.banks (bank_id, name) FROM stdin;
 
 COPY public.comments (comment_id, content_id, commenter_id, description, "time", date, rate) FROM stdin;
 1	5	5	Epic Video                                                                                          	23:43:54.742951	2022-08-09	0
-2	5	6	Nice Content                                                                                        	23:47:13.830674	2022-08-09	0
+2	5	6	Nice Content                                                                                        	23:47:13.830674	2022-08-09	1.000000
+3	5	5	Loved it                                                                                            	20:04:31.84021	2022-08-24	2.000000
 \.
 
 

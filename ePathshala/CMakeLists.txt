@@ -26,6 +26,10 @@ add_executable(ePathshala
     "src/HandleRequests/root/UpdateUserDetails.cpp"
     "src/HandleRequests/root/UpdatePfp.cpp"
     "src/HandleRequests/root/Insert/Course.cpp"
+    "src/HandleRequests/root/Insert/Comment.cpp"
+    "src/HandleRequests/root/Delete/Comment.cpp"
+    "src/HandleRequests/root/Update/CommentRate.cpp"
+    "src/HandleRequests/root/Update/Comment.cpp"
 )
 
 find_package(Drogon REQUIRED)

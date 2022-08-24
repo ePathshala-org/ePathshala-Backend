@@ -95,6 +95,22 @@ int main()
         {
             InsertCourse(request, response, dbClient);
         }
+        else if(request["type"].asString() == "post-comment")
+        {
+            PostComment(request, dbClient);
+        }
+        else if(request["type"].asString() == "delete-comment")
+        {
+            DeleteComment(request, dbClient);
+        }
+        else if(request["type"].asString() == "update-comment-rate")
+        {
+            UpdateCommentRate(request, dbClient);
+        }
+        else if(request["type"].asString() == "update-comment")
+        {
+            UpdateComment(request, dbClient);
+        }
 
         std::clog << "Sending response" << std::endl;
 

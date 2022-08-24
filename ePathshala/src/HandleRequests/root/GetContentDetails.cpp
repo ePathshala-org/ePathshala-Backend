@@ -4,10 +4,9 @@ void GetContentDetails(Json::Value &request, Json::Value &response, drogon::orm:
 {
     std::clog << "Get \"content-details\" request" << std::endl;
 
-    std::ifstream inputFileStream("./sql/get-content-details.sql");
     std::stringstream queryStream;
 
-    queryStream << inputFileStream.rdbuf();
+    queryStream.str("SELECT * FROM GET_CONTENT_DETAILS($1)");
 
     std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), request["content_id"].asInt64());
 

@@ -17,3 +17,7 @@
 #include "root/UpdateUserDetails.h"
 #include "root/UpdatePfp.h"
 #include "root/Insert/Course.h"
+#include "root/Insert/Comment.h"
+#include "root/Delete/Comment.h"
+#include "root/Update/CommentRate.h"
+#include "root/Update/Comment.h"

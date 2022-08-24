@@ -4,10 +4,9 @@ void GetComments(Json::Value &request, Json::Value &response, drogon::orm::DbCli
 {
     std::clog << "Get \"get-comments\" request" << std::endl;
 
-    std::ifstream inputFileStream("./sql/get-comments.sql");
     std::stringstream queryStream;
 
-    queryStream << inputFileStream.rdbuf();
+    queryStream.str("SELECT * FROM GET_COMMENTS_BY_TIME_DESC($1)");
 
     std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), request["content_id"].asInt64());
 
