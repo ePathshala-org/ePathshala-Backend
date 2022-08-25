@@ -119,6 +119,10 @@ int main()
         {
             DeleteInterest(request, dbClient);
         }
+        else if(request["type"].asString() == "insert-student")
+        {
+            InsertStudent(request, dbClient);
+        }
         else if(request["type"].asString() == "insert-teacher")
         {
             InsertTeacher(request, dbClient);
@@ -126,6 +130,14 @@ int main()
         else if(request["type"].asString() == "insert-interest")
         {
             InsertInterest(request, dbClient);
+        }
+        else if(request["type"].asString() == "delete-course")
+        {
+            DeleteCourse(request, dbClient);
+        }
+        else if(request["type"].asString() == "get-specialities")
+        {
+            GetSpecialities(request, response, dbClient);
         }
 
         std::clog << "Sending response" << std::endl;

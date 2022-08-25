@@ -6,7 +6,7 @@ void GetCoursesTeacher(Json::Value &request, Json::Value &response, drogon::orm:
 
     std::stringstream queryStream;
 
-    queryStream.str("SELECT * FROM GET_COURSES_TEACHER($1)");   
+    queryStream.str("SELECT * FROM GET_COURSES_TEACHER_BY_TITLE_ASC($1)");
 
     std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), request["teacher_id"].asInt64());
 

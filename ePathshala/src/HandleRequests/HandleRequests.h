@@ -25,3 +25,6 @@
 #include "root/Delete/Interest.h"
 #include "root/Insert/Teacher.h"
 #include "root/Insert/Interest.h"
+#include "root/Delete/Course.h"
+#include "root/Insert/Student.h"
+#include "root/GetSpecialities.h"
