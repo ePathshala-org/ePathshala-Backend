@@ -37,6 +37,8 @@ add_executable(ePathshala
     "src/HandleRequests/root/Insert/Interest.cpp"
     "src/HandleRequests/root/Delete/Course.cpp"
     "src/HandleRequests/root/GetSpecialities.cpp"
+    "src/HandleRequests/root/Insert/Speciality.cpp"
+    "src/HandleRequests/root/Delete/Speciality.cpp"
 )
 
 find_package(Drogon REQUIRED)

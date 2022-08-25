@@ -28,3 +28,5 @@
 #include "root/Delete/Course.h"
 #include "root/Insert/Student.h"
 #include "root/GetSpecialities.h"
+#include "root/Insert/Speciality.h"
+#include "root/Delete/Speciality.h"

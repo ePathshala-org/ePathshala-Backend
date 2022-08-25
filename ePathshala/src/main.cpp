@@ -139,6 +139,14 @@ int main()
         {
             GetSpecialities(request, response, dbClient);
         }
+        else if(request["type"].asString() == "insert-speciality")
+        {
+            InsertSpeciality(request, dbClient);
+        }
+        else if(request["type"].asString() == "delete-speciality")
+        {
+            DeleteSpeciality(request, dbClient);
+        }
 
         std::clog << "Sending response" << std::endl;
 
