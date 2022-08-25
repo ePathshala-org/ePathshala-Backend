@@ -248,6 +248,54 @@ $$;
 ALTER PROCEDURE public.delete_comment(IN param_comment_id bigint) OWNER TO epathshala;
 
 --
+-- Name: delete_course(bigint); Type: PROCEDURE; Schema: public; Owner: epathshala
+--
+
+CREATE PROCEDURE public.delete_course(IN param_course_id bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	DELETE FROM COURSES
+	WHERE COURSE_ID = PARAM_COURSE_ID;
+END;
+$$;
+
+
+ALTER PROCEDURE public.delete_course(IN param_course_id bigint) OWNER TO epathshala;
+
+--
+-- Name: delete_interest(bigint, character varying); Type: PROCEDURE; Schema: public; Owner: epathshala
+--
+
+CREATE PROCEDURE public.delete_interest(IN param_student_id bigint, IN param_interest character varying)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	DELETE FROM STUDENT_INTERESTS
+	WHERE STUDENT_ID = PARAM_STUDENT_ID AND INTEREST = PARAM_INTEREST;
+END;
+$$;
+
+
+ALTER PROCEDURE public.delete_interest(IN param_student_id bigint, IN param_interest character varying) OWNER TO epathshala;
+
+--
+-- Name: delete_speciality(bigint, character varying); Type: PROCEDURE; Schema: public; Owner: epathshala
+--
+
+CREATE PROCEDURE public.delete_speciality(IN param_teacher_id bigint, IN param_speciality character varying)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	DELETE FROM TEACHER_SPECIALITIES
+	WHERE TEACHER_ID = PARAM_TEACHER_ID AND SPECIALITY = PARAM_SPECIALITY;
+END;
+$$;
+
+
+ALTER PROCEDURE public.delete_speciality(IN param_teacher_id bigint, IN param_speciality character varying) OWNER TO epathshala;
+
+--
 -- Name: enroll_student(bigint, bigint); Type: PROCEDURE; Schema: public; Owner: epathshala
 --
 
@@ -698,53 +746,122 @@ $$;
 ALTER FUNCTION public.get_courses_rate() OWNER TO epathshala;
 
 --
--- Name: get_courses_teacher(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+-- Name: get_courses_teacher_by_date_asc(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
 --
 
-CREATE FUNCTION public.get_courses_teacher(param_teacher_id bigint) RETURNS TABLE(course_id bigint, title character varying, description character varying, date_of_creation date, price integer, rate numeric, enroll_count bigint)
+CREATE FUNCTION public.get_courses_teacher_by_date_asc(param_teacher_id bigint) RETURNS TABLE(course_id bigint, title character varying, description character varying, date_of_creation date, price integer, rate numeric, enroll_count bigint)
     LANGUAGE plpgsql
     AS $$
-DECLARE
-	TEACHER_RATE NUMERIC;
-	RATED_COUNT BIGINT;
-	ENROLL_COUNT BIGINT;
 BEGIN
-	SELECT COUNT(*) INTO RATED_COUNT
-	FROM CONTENT_VIEWERS
-	JOIN CONTENTS
-	ON(CONTENT_VIEWERS.CONTENT_ID = CONTENTS.CONTENT_ID)
-	JOIN COURSES
-	ON(CONTENTS.COURSE_ID = COURSES.COURSE_ID)
-	WHERE CREATOR_ID = PARAM_TEACHER_ID AND CONTENT_VIEWERS.RATE IS NOT NULL;
-	IF RATED_COUNT > 0 THEN
-		SELECT AVG(CONTENT_VIEWERS.RATE) INTO TEACHER_RATE
-		FROM CONTENT_VIEWERS
-		JOIN CONTENTS
-		ON(CONTENT_VIEWERS.CONTENT_ID = CONTENTS.CONTENT_ID)
-		JOIN COURSES
-		ON(CONTENTS.COURSE_ID = COURSES.COURSE_ID)
-		WHERE CREATOR_ID = PARAM_TEACHER_ID AND CONTENT_VIEWERS.RATE IS NOT NULL;
-	ELSE
-		TEACHER_RATE := 0;
-	END IF;
-	SELECT COUNT(*) INTO ENROLL_COUNT
-	FROM ENROLLED_COURSES
-	JOIN COURSES
-	ON (ENROLLED_COURSES.COURSE_ID = COURSES.COURSE_ID)
-	WHERE CREATOR_ID = PARAM_TEACHER_ID;
-	RETURN QUERY SELECT COURSES.COURSE_ID, COURSES.TITLE, TRIM(COURSES.DESCRIPTION)::VARCHAR, COURSES.DATE_OF_CREATION, COURSES.PRICE, TEACHER_RATE::NUMERIC(3, 2), ENROLL_COUNT
+	RETURN QUERY SELECT
+		COURSES.COURSE_ID,
+		COURSES.TITLE,
+		TRIM(COURSES.DESCRIPTION)::VARCHAR,
+		COURSES.DATE_OF_CREATION,
+		COURSES.PRICE,
+		COURSES.RATE::NUMERIC(3, 2),
+		COURSES.ENROLL_COUNT
 	FROM COURSES
-	JOIN CONTENTS
-	ON (COURSES.COURSE_ID = CONTENTS.COURSE_ID)
-	JOIN CONTENT_VIEWERS
-	ON (CONTENTS.CONTENT_ID = CONTENT_VIEWERS.CONTENT_ID)
 	WHERE CREATOR_ID = PARAM_TEACHER_ID
-	GROUP BY COURSES.COURSE_ID, COURSES.TITLE, COURSES.DESCRIPTION, COURSES.DATE_OF_CREATION, COURSES.PRICE;
+	ORDER BY DATE_OF_CREATION ASC;
 END;
 $$;
 
 
-ALTER FUNCTION public.get_courses_teacher(param_teacher_id bigint) OWNER TO epathshala;
+ALTER FUNCTION public.get_courses_teacher_by_date_asc(param_teacher_id bigint) OWNER TO epathshala;
+
+--
+-- Name: get_courses_teacher_by_date_desc(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_courses_teacher_by_date_desc(param_teacher_id bigint) RETURNS TABLE(course_id bigint, title character varying, description character varying, date_of_creation date, price integer, rate numeric, enroll_count bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT
+		COURSES.COURSE_ID,
+		COURSES.TITLE,
+		TRIM(COURSES.DESCRIPTION)::VARCHAR,
+		COURSES.DATE_OF_CREATION,
+		COURSES.PRICE,
+		COURSES.RATE::NUMERIC(3, 2),
+		COURSES.ENROLL_COUNT
+	FROM COURSES
+	WHERE CREATOR_ID = PARAM_TEACHER_ID
+	ORDER BY DATE_OF_CREATION DESC;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_courses_teacher_by_date_desc(param_teacher_id bigint) OWNER TO epathshala;
+
+--
+-- Name: get_courses_teacher_by_title_asc(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_courses_teacher_by_title_asc(param_teacher_id bigint) RETURNS TABLE(course_id bigint, title character varying, description character varying, date_of_creation date, price integer, rate numeric, enroll_count bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT
+		COURSES.COURSE_ID,
+		COURSES.TITLE,
+		TRIM(COURSES.DESCRIPTION)::VARCHAR,
+		COURSES.DATE_OF_CREATION,
+		COURSES.PRICE,
+		COURSES.RATE::NUMERIC(3, 2),
+		COURSES.ENROLL_COUNT
+	FROM COURSES
+	WHERE CREATOR_ID = PARAM_TEACHER_ID
+	ORDER BY TITLE ASC;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_courses_teacher_by_title_asc(param_teacher_id bigint) OWNER TO epathshala;
+
+--
+-- Name: get_courses_teacher_by_title_desc(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_courses_teacher_by_title_desc(param_teacher_id bigint) RETURNS TABLE(course_id bigint, title character varying, description character varying, date_of_creation date, price integer, rate numeric, enroll_count bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT
+		COURSES.COURSE_ID,
+		COURSES.TITLE,
+		TRIM(COURSES.DESCRIPTION)::VARCHAR,
+		COURSES.DATE_OF_CREATION,
+		COURSES.PRICE,
+		COURSES.RATE::NUMERIC(3, 2),
+		COURSES.ENROLL_COUNT
+	FROM COURSES
+	WHERE CREATOR_ID = PARAM_TEACHER_ID
+	ORDER BY TITLE DESC;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_courses_teacher_by_title_desc(param_teacher_id bigint) OWNER TO epathshala;
+
+--
+-- Name: get_interests(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_interests(param_user_id bigint) RETURNS TABLE(interest character varying)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT
+		STUDENT_INTERESTS.INTEREST
+	FROM STUDENT_INTERESTS
+	WHERE STUDENT_ID = PARAM_USER_ID;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_interests(param_user_id bigint) OWNER TO epathshala;
 
 --
 -- Name: get_new_comment_id(); Type: FUNCTION; Schema: public; Owner: epathshala
@@ -841,6 +958,24 @@ $$;
 
 
 ALTER FUNCTION public.get_new_user_id() OWNER TO epathshala;
+
+--
+-- Name: get_specialities(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_specialities(param_teacher_id bigint) RETURNS TABLE(speciality character varying)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT
+		TEACHER_SPECIALITIES.SPECIALITY
+	FROM TEACHER_SPECIALITIES
+	WHERE TEACHER_ID = PARAM_TEACHER_ID;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_specialities(param_teacher_id bigint) OWNER TO epathshala;
 
 --
 -- Name: get_student_courses_by_rate_asc(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
@@ -964,33 +1099,19 @@ ALTER FUNCTION public.get_student_details(param_user_id bigint) OWNER TO epathsh
 CREATE FUNCTION public.get_teacher_details(param_teacher_id bigint) RETURNS TABLE(user_id bigint, full_name character varying, email character varying, bio character varying, date_of_birth date, date_of_join date, rate numeric)
     LANGUAGE plpgsql
     AS $$
-DECLARE
-	RATED_COUNT BIGINT;
-	TEACHER_RATE NUMERIC;
 BEGIN
-	SELECT COUNT(*) INTO RATED_COUNT
-	FROM CONTENT_VIEWERS
-	JOIN CONTENTS
-	ON (CONTENT_VIEWERS.CONTENT_ID = CONTENTS.CONTENT_ID)
-	JOIN COURSES
-	ON (CONTENTS.COURSE_ID = COURSES.COURSE_ID)
-	WHERE CREATOR_ID = PARAM_TEACHER_ID AND CONTENT_VIEWERS.RATE IS NOT NULL;
-	IF RATED_COUNT > 0 THEN
-		SELECT AVG(CONTENT_VIEWERS.RATE) INTO RATED_COUNT
-		FROM CONTENT_VIEWERS
-		JOIN CONTENTS
-		ON (CONTENT_VIEWERS.CONTENT_ID = CONTENTS.CONTENT_ID)
-		JOIN COURSES
-		ON (CONTENTS.COURSE_ID = COURSES.COURSE_ID)
-		WHERE CREATOR_ID = PARAM_TEACHER_ID AND CONTENT_VIEWERS.RATE IS NOT NULL;
-	ELSE
-		TEACHER_RATE := 0;
-	END IF;
-	RETURN QUERY SELECT TEACHERS.USER_ID, USERS.FULL_NAME, USERS.EMAIL, TRIM(USERS.BIO)::VARCHAR, USERS.DATE_OF_BIRTH, TEACHERS.DATE_OF_JOIN, TEACHER_RATE
-	FROM TEACHERS
-	JOIN USERS
-	ON (TEACHERS.USER_ID = USERS.USER_ID)
-	WHERE TEACHERS.USER_ID = PARAM_TEACHER_ID;
+	RETURN QUERY SELECT
+		USERS.USER_ID,
+		USERS.FULL_NAME,
+		USERS.EMAIL,
+		TRIM(USERS.BIO)::VARCHAR,
+		USERS.DATE_OF_BIRTH,
+		TEACHERS.DATE_OF_JOIN,
+		TEACHERS.RATE::NUMERIC(3, 2)
+	FROM USERS
+	JOIN TEACHERS
+	ON (USERS.USER_ID = TEACHERS.USER_ID)
+	WHERE USERS.USER_ID = PARAM_TEACHER_ID;
 END;
 $$;
 
@@ -1123,6 +1244,72 @@ $$;
 
 
 ALTER FUNCTION public.insert_course(param_teacher_id bigint, param_course_title character varying, param_course_description character varying, param_course_price character varying) OWNER TO epathshala;
+
+--
+-- Name: insert_interest(bigint, character varying); Type: PROCEDURE; Schema: public; Owner: epathshala
+--
+
+CREATE PROCEDURE public.insert_interest(IN param_student_id bigint, IN param_interest character varying)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	INSERT INTO STUDENT_INTERESTS (STUDENT_ID, INTEREST)
+	VALUES
+		(PARAM_STUDENT_ID, PARAM_INTEREST);
+END;
+$$;
+
+
+ALTER PROCEDURE public.insert_interest(IN param_student_id bigint, IN param_interest character varying) OWNER TO epathshala;
+
+--
+-- Name: insert_speciality(bigint, character varying); Type: PROCEDURE; Schema: public; Owner: epathshala
+--
+
+CREATE PROCEDURE public.insert_speciality(IN param_teacher_id bigint, IN param_speciality character varying)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	INSERT INTO TEACHER_SPECIALITIES (TEACHER_ID, SPECIALITY)
+	VALUES (PARAM_TEACHER_ID, PARAM_SPECIALITY);
+END;
+$$;
+
+
+ALTER PROCEDURE public.insert_speciality(IN param_teacher_id bigint, IN param_speciality character varying) OWNER TO epathshala;
+
+--
+-- Name: insert_student(bigint); Type: PROCEDURE; Schema: public; Owner: epathshala
+--
+
+CREATE PROCEDURE public.insert_student(IN param_user_id bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	INSERT INTO STUDENTS (USER_ID)
+	VALUES
+		(PARAM_USER_ID);
+END;
+$$;
+
+
+ALTER PROCEDURE public.insert_student(IN param_user_id bigint) OWNER TO epathshala;
+
+--
+-- Name: insert_teacher(bigint); Type: PROCEDURE; Schema: public; Owner: epathshala
+--
+
+CREATE PROCEDURE public.insert_teacher(IN param_user_id bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	INSERT INTO TEACHERS (USER_ID)
+	VALUES (PARAM_USER_ID);
+END;
+$$;
+
+
+ALTER PROCEDURE public.insert_teacher(IN param_user_id bigint) OWNER TO epathshala;
 
 --
 -- Name: insert_user(character varying, character varying, character varying, integer, integer, integer, character varying, character varying); Type: FUNCTION; Schema: public; Owner: epathshala
@@ -1554,7 +1741,7 @@ CREATE TABLE public.courses (
     date_of_creation date DEFAULT CURRENT_DATE NOT NULL,
     price integer DEFAULT 0,
     creator_id bigint,
-    rate numeric,
+    rate numeric DEFAULT 0,
     enroll_count bigint DEFAULT 0,
     CONSTRAINT courses_course_id_check CHECK ((course_id > 0)),
     CONSTRAINT courses_enroll_count_check CHECK ((enroll_count >= 0)),
@@ -4829,7 +5016,6 @@ COPY public.quiz_grades (user_id, content_id, grade) FROM stdin;
 --
 
 COPY public.student_interests (student_id, interest) FROM stdin;
-1	math
 1	computer
 1	history
 2	computer
@@ -4845,8 +5031,6 @@ COPY public.student_interests (student_id, interest) FROM stdin;
 5	math
 5	computer
 6	statistics
-6	math
-6	computer
 7	literature
 7	statistics
 7	math
@@ -4976,6 +5160,9 @@ COPY public.student_interests (student_id, interest) FROM stdin;
 49	statistics
 49	math
 49	computer
+1	math
+6	literature
+6	math
 \.
 
 
@@ -5034,7 +5221,6 @@ COPY public.students (user_id, date_of_join, rank_point) FROM stdin;
 48	2020-11-28	0
 49	2020-07-11	0
 50	2021-07-20	0
-61	2022-08-15	0
 \.
 
 
@@ -5056,7 +5242,6 @@ COPY public.tags (tag_id, tag_name) FROM stdin;
 --
 
 COPY public.teacher_specialities (teacher_id, speciality) FROM stdin;
-51	Math
 51	Computer
 52	Math
 53	Math
@@ -5071,6 +5256,7 @@ COPY public.teacher_specialities (teacher_id, speciality) FROM stdin;
 59	Computer
 60	Economics
 60	History
+51	Math
 \.
 
 
@@ -5080,8 +5266,8 @@ COPY public.teacher_specialities (teacher_id, speciality) FROM stdin;
 
 COPY public.teachers (user_id, date_of_join, credit, rate) FROM stdin;
 59	2021-03-13	0	3.3095238095238095
-51	2019-10-19	1000	3.0950396825396825
 53	2020-10-15	0	2.9301190476190476
+51	2019-10-19	1000	3.0950396825396825
 55	2020-03-12	2800	3.1426767676767677
 56	2020-05-08	0	2.6458333333333333
 60	2021-05-15	0	3.5416666666666667
@@ -5100,7 +5286,6 @@ COPY public.users (user_id, full_name, security_key, date_of_birth, bio, email, 
 2	Marisol Hicks	12345678                        	1997-11-04	                                                                                                    	marisol445@gmail.com	STUDENT   
 3	Jose Sylvester	12345678                        	2000-03-06	                                                                                                    	jose7038@gmail.com	STUDENT   
 4	William Adams	12345678                        	1993-11-21	                                                                                                    	william2284@gmail.com	STUDENT   
-6	Ashley Langston	12345678                        	1980-03-27	                                                                                                    	ashley932@gmail.com	STUDENT   
 7	Allyson Moschetti	12345678                        	1997-12-05	                                                                                                    	allyson3467@gmail.com	STUDENT   
 8	Dolores White	12345678                        	1994-09-24	                                                                                                    	dolores2369@gmail.com	STUDENT   
 9	Dorothy Alford	12345678                        	1998-01-04	                                                                                                    	dorothy1775@gmail.com	STUDENT   
@@ -5129,6 +5314,7 @@ COPY public.users (user_id, full_name, security_key, date_of_birth, bio, email, 
 32	Sharon Acker	12345678                        	1988-11-26	                                                                                                    	sharon5866@gmail.com	STUDENT   
 33	James Thomas	12345678                        	1984-08-02	                                                                                                    	james8865@gmail.com	STUDENT   
 1	Mary Prezzia	12345678                        	1986-02-25	                                                                                                    	mary1151@gmail.com	STUDENT   
+6	Ashley Langston	undefined                       	1980-03-27	Hi, I am Ashley Langston                                                                            	ashley932@gmail.com	STUDENT   
 34	Reginald Contreras	12345678                        	1992-07-17	                                                                                                    	reginald5090@gmail.com	STUDENT   
 35	Robert Gartin	12345678                        	1999-02-15	                                                                                                    	robert2831@gmail.com	STUDENT   
 36	Sharon Gamino	12345678                        	1999-11-17	                                                                                                    	sharon1938@gmail.com	STUDENT   
@@ -5146,7 +5332,6 @@ COPY public.users (user_id, full_name, security_key, date_of_birth, bio, email, 
 48	Lori Gilmore	12345678                        	1986-01-07	                                                                                                    	lori8056@gmail.com	STUDENT   
 49	Kristina Shriver	12345678                        	1996-11-06	                                                                                                    	kristina8057@gmail.com	STUDENT   
 50	William Kish	12345678                        	1993-12-07	                                                                                                    	william3749@gmail.com	STUDENT   
-51	Martha Marbley	12345678                        	1986-05-26	                                                                                                    	martha4381@gmail.com	TEACHER   
 52	Carolyn Watkins	12345678                        	2000-06-12	                                                                                                    	carolyn8065@gmail.com	TEACHER   
 53	Diane Jones	12345678                        	1998-06-24	                                                                                                    	diane6212@gmail.com	TEACHER   
 54	Helena Nolder	12345678                        	1992-11-09	                                                                                                    	helena1754@gmail.com	TEACHER   
@@ -5156,8 +5341,8 @@ COPY public.users (user_id, full_name, security_key, date_of_birth, bio, email, 
 60	Pamela Pemberton	12345678                        	1981-02-21	                                                                                                    	pamela4346@gmail.com	TEACHER   
 58	Mario Barnett	12345678                        	1998-02-23	                                                                                                    	mario4755@gmail.com	TEACHER   
 59	Hubert Rodriguez	12345678                        	1988-11-19	                                                                                                    	hubert3151@gmail.com	TEACHER   
+51	Martha Marbley	undefined                       	1986-05-26	                                                                                                    	martha4381@gmail.com	TEACHER   
 5	Michelle Kimmell	12345678                        	1992-01-01	                                                                                                    	michelle2802@gmail.com	STUDENT   
-61	Mustafa Siam Ur Rafique	87654321                        	2000-10-16	Hehe                                                                                                	siam11651@outlook.com	STUDENT   
 \.
 
 

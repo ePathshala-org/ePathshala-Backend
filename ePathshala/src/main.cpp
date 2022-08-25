@@ -147,6 +147,14 @@ int main()
         {
             DeleteSpeciality(request, dbClient);
         }
+        else if(request["type"].asString() == "delete-content")
+        {
+            DeleteContent(request, dbClient);
+        }
+        else if(request["type"].asString() == "update-course")
+        {
+            UpdateCourse(request, dbClient);
+        }
 
         std::clog << "Sending response" << std::endl;
 
@@ -161,9 +169,16 @@ int main()
     {
         std::clog << "***server-test***" << std::endl;
 
-        drogon::HttpResponsePtr httpResponsePtr = drogon::HttpResponse::newHttpResponse();
-        httpResponsePtr->setBody("Hello");
+        std::clog << httpRequestPtr->getHeader("Incoming") << std::endl;
+        std::ofstream f("/home/siam11651/Desktop/hehe", std::fstream::out);
+        f << httpRequestPtr->getBody();
 
+        f.close();
+
+        // std::clog << httpRequestPtr->getBody() << std::endl;
+
+        drogon::HttpResponsePtr httpResponsePtr = drogon::HttpResponse::newHttpResponse();
+        
         callback(httpResponsePtr);
     }, {drogon::Post});
 
