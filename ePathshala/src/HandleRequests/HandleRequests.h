@@ -21,3 +21,7 @@
 #include "root/Delete/Comment.h"
 #include "root/Update/CommentRate.h"
 #include "root/Update/Comment.h"
+#include "root/GetInterests.h"
+#include "root/Delete/Interest.h"
+#include "root/Insert/Teacher.h"
+#include "root/Insert/Interest.h"

@@ -111,6 +111,22 @@ int main()
         {
             UpdateComment(request, dbClient);
         }
+        else if(request["type"].asString() == "get-interests")
+        {
+            GetInterests(request, response, dbClient);
+        }
+        else if(request["type"].asString() == "delete-interest")
+        {
+            DeleteInterest(request, dbClient);
+        }
+        else if(request["type"].asString() == "insert-teacher")
+        {
+            InsertTeacher(request, dbClient);
+        }
+        else if(request["type"].asString() == "insert-interest")
+        {
+            InsertInterest(request, dbClient);
+        }
 
         std::clog << "Sending response" << std::endl;
 

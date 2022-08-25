@@ -30,6 +30,10 @@ add_executable(ePathshala
     "src/HandleRequests/root/Delete/Comment.cpp"
     "src/HandleRequests/root/Update/CommentRate.cpp"
     "src/HandleRequests/root/Update/Comment.cpp"
+    "src/HandleRequests/root/GetInterests.cpp"
+    "src/HandleRequests/root/Delete/Interest.cpp"
+    "src/HandleRequests/root/Insert/Teacher.cpp"
+    "src/HandleRequests/root/Insert/Interest.cpp"
 )
 
 find_package(Drogon REQUIRED)
