@@ -19,141 +19,147 @@ int main()
     drogon::orm::DbClient &dbClient = *dbClientPtr;
 
 	httpAppFramework.registerHandler("/",
-    [&dbClient, &httpAppFramework, &downloads](const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback)
+    [&dbClient, &httpAppFramework, &downloads](const drogon::HttpRequestPtr &httpRequestPtr, std::function<void(const drogon::HttpResponsePtr &)> &&callback)
     {
-        std::shared_ptr<Json::Value> reqJsonPtr = req->getJsonObject();
-        Json::Value &request = *reqJsonPtr.get();
         Json::Value response;
 
-        std::clog << "type: " << request["type"].asString() << std::endl;
+        if(httpRequestPtr->getHeader("incoming") == "video-file")
+        {
+            UploadVideo(httpRequestPtr, response, dbClient, httpAppFramework);
+        }
+        else
+        {
+            std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
+            Json::Value &request = *reqJsonPtr.get();
 
-        if(request["type"].asString() == "get-user-details")
-        {
-            GetUserDetails(request, response, dbClient);
-        }
-        else if(request["type"].asString() == "get-user-id")
-        {
-            GetUserId(request, response, dbClient);
-        }
-        else if(request["type"].asString() == "get-courses-popular")
-        {
-            GetCoursesPopular(request, response, dbClient);
-        }
-        else if(request["type"].asString() == "get-course-details")
-        {
-            GetCourseDetails(request, response, dbClient);
-        }
-        else if(request["type"].asString() == "get-course-contents")
-        {
-            GetCourseContents(request, response, dbClient);
-        }
-        else if(request["type"].asString() == "get-content-details")
-        {
-            GetContentDetails(request, response, dbClient);
-        }
-        else if(request["type"].asString() == "get-comments")
-        {
-            GetComments(request, response, dbClient);
-        }
-        else if(request["type"].asString() == "get-student-details")
-        {
-            GetStudentDetails(request, response, dbClient);
-        }
-        else if(request["type"].asString() == "get-courses-student")
-        {
-            GetCoursesStudent(request, response, dbClient);
-        }
-        else if(request["type"].asString() == "get-course-remain-content-count")
-        {
-            GetCourseRemainContentCount(request, response, dbClient);
-        }
-        else if(request["type"].asString() == "check-user-enrolled")
-        {
-            CheckUserEnrolled(request, response, dbClient);
-        }
-        else if(request["type"].asString() == "buy-course")
-        {
-            BuyCourse(request, response, dbClient);
-        }
-        else if(request["type"].asString() == "get-teacher-details")
-        {
-            GetTeacherDetails(request, response, dbClient);
-        }
-        else if(request["type"].asString() == "get-courses-teacher")
-        {
-            GetCoursesTeacher(request, response, dbClient);
-        }
-        else if(request["type"].asString() == "update-user-details")
-        {
-            UpdateUserDetails(request, response, dbClient);
-        }
-        else if(request["type"].asString() == "update-pfp")
-        {
-            UpdatePfp(request, response, httpAppFramework);
-        }
-        else if(request["type"].asString() == "insert-new-course")
-        {
-            InsertCourse(request, response, dbClient);
-        }
-        else if(request["type"].asString() == "post-comment")
-        {
-            PostComment(request, dbClient);
-        }
-        else if(request["type"].asString() == "delete-comment")
-        {
-            DeleteComment(request, dbClient);
-        }
-        else if(request["type"].asString() == "update-comment-rate")
-        {
-            UpdateCommentRate(request, dbClient);
-        }
-        else if(request["type"].asString() == "update-comment")
-        {
-            UpdateComment(request, dbClient);
-        }
-        else if(request["type"].asString() == "get-interests")
-        {
-            GetInterests(request, response, dbClient);
-        }
-        else if(request["type"].asString() == "delete-interest")
-        {
-            DeleteInterest(request, dbClient);
-        }
-        else if(request["type"].asString() == "insert-student")
-        {
-            InsertStudent(request, dbClient);
-        }
-        else if(request["type"].asString() == "insert-teacher")
-        {
-            InsertTeacher(request, dbClient);
-        }
-        else if(request["type"].asString() == "insert-interest")
-        {
-            InsertInterest(request, dbClient);
-        }
-        else if(request["type"].asString() == "delete-course")
-        {
-            DeleteCourse(request, dbClient);
-        }
-        else if(request["type"].asString() == "get-specialities")
-        {
-            GetSpecialities(request, response, dbClient);
-        }
-        else if(request["type"].asString() == "insert-speciality")
-        {
-            InsertSpeciality(request, dbClient);
-        }
-        else if(request["type"].asString() == "delete-speciality")
-        {
-            DeleteSpeciality(request, dbClient);
-        }
-        else if(request["type"].asString() == "delete-content")
-        {
-            DeleteContent(request, dbClient);
-        }
-        else if(request["type"].asString() == "update-course")
-        {
-            UpdateCourse(request, dbClient);
+            if(request["type"].asString() == "get-user-details")
+            {
+                GetUserDetails(request, response, dbClient);
+            }
+            else if(request["type"].asString() == "get-user-id")
+            {
+                GetUserId(request, response, dbClient);
+            }
+            else if(request["type"].asString() == "get-courses-popular")
+            {
+                GetCoursesPopular(request, response, dbClient);
+            }
+            else if(request["type"].asString() == "get-course-details")
+            {
+                GetCourseDetails(request, response, dbClient);
+            }
+            else if(request["type"].asString() == "get-course-contents")
+            {
+                GetCourseContents(request, response, dbClient);
+            }
+            else if(request["type"].asString() == "get-content-details")
+            {
+                GetContentDetails(request, response, dbClient);
+            }
+            else if(request["type"].asString() == "get-comments")
+            {
+                GetComments(request, response, dbClient);
+            }
+            else if(request["type"].asString() == "get-student-details")
+            {
+                GetStudentDetails(request, response, dbClient);
+            }
+            else if(request["type"].asString() == "get-courses-student")
+            {
+                GetCoursesStudent(request, response, dbClient);
+            }
+            else if(request["type"].asString() == "get-course-remain-content-count")
+            {
+                GetCourseRemainContentCount(request, response, dbClient);
+            }
+            else if(request["type"].asString() == "check-user-enrolled")
+            {
+                CheckUserEnrolled(request, response, dbClient);
+            }
+            else if(request["type"].asString() == "buy-course")
+            {
+                BuyCourse(request, response, dbClient);
+            }
+            else if(request["type"].asString() == "get-teacher-details")
+            {
+                GetTeacherDetails(request, response, dbClient);
+            }
+            else if(request["type"].asString() == "get-courses-teacher")
+            {
+                GetCoursesTeacher(request, response, dbClient);
+            }
+            else if(request["type"].asString() == "update-user-details")
+            {
+                UpdateUserDetails(request, response, dbClient);
+            }
+            else if(request["type"].asString() == "update-pfp")
+            {
+                UpdatePfp(request, response, httpAppFramework);
+            }
+            else if(request["type"].asString() == "insert-new-course")
+            {
+                InsertCourse(request, response, dbClient);
+            }
+            else if(request["type"].asString() == "post-comment")
+            {
+                PostComment(request, dbClient);
+            }
+            else if(request["type"].asString() == "delete-comment")
+            {
+                DeleteComment(request, dbClient);
+            }
+            else if(request["type"].asString() == "update-comment-rate")
+            {
+                UpdateCommentRate(request, dbClient);
+            }
+            else if(request["type"].asString() == "update-comment")
+            {
+                UpdateComment(request, dbClient);
+            }
+            else if(request["type"].asString() == "get-interests")
+            {
+                GetInterests(request, response, dbClient);
+            }
+            else if(request["type"].asString() == "delete-interest")
+            {
+                DeleteInterest(request, dbClient);
+            }
+            else if(request["type"].asString() == "insert-student")
+            {
+                InsertStudent(request, dbClient);
+            }
+            else if(request["type"].asString() == "insert-teacher")
+            {
+                InsertTeacher(request, dbClient);
+            }
+            else if(request["type"].asString() == "insert-interest")
+            {
+                InsertInterest(request, dbClient);
+            }
+            else if(request["type"].asString() == "delete-course")
+            {
+                DeleteCourse(request, dbClient);
+            }
+            else if(request["type"].asString() == "get-specialities")
+            {
+                GetSpecialities(request, response, dbClient);
+            }
+            else if(request["type"].asString() == "insert-speciality")
+            {
+                InsertSpeciality(request, dbClient);
+            }
+            else if(request["type"].asString() == "delete-speciality")
+            {
+                DeleteSpeciality(request, dbClient);
+            }
+            else if(request["type"].asString() == "delete-content")
+            {
+                DeleteContent(request, dbClient);
+            }
+            else if(request["type"].asString() == "update-course")
+            {
+                UpdateCourse(request, dbClient);
+            }
         }
 
         std::clog << "Sending response" << std::endl;
