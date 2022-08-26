@@ -43,7 +43,7 @@ int main()
             std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
             Json::Value &request = *reqJsonPtr.get();
 
-            
+            Login(request, response, dbClient);
         }
         else
         {
