@@ -248,6 +248,22 @@ $$;
 ALTER PROCEDURE public.delete_comment(IN param_comment_id bigint) OWNER TO epathshala;
 
 --
+-- Name: delete_content(bigint); Type: PROCEDURE; Schema: public; Owner: epathshala
+--
+
+CREATE PROCEDURE public.delete_content(IN param_content_id bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	DELETE FROM CONTENTS
+	WHERE CONTENT_ID = PARAM_CONTENT_ID;
+END;
+$$;
+
+
+ALTER PROCEDURE public.delete_content(IN param_content_id bigint) OWNER TO epathshala;
+
+--
 -- Name: delete_course(bigint); Type: PROCEDURE; Schema: public; Owner: epathshala
 --
 
@@ -896,6 +912,38 @@ $$;
 ALTER FUNCTION public.get_new_comment_id() OWNER TO epathshala;
 
 --
+-- Name: get_new_content_id(); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_new_content_id() RETURNS bigint
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	MAX_CONTENT_ID BIGINT;
+	NEW_CONTENT_ID BIGINT;
+BEGIN
+	SELECT MAX(CONTENT_ID) INTO MAX_CONTENT_ID
+	FROM CONTENTS;
+	IF MAX_CONTENT_ID IS NULL THEN
+		RETURN 1;
+	ELSE
+		FOR I IN 1..MAX_CONTENT_ID LOOP
+			SELECT CONTENT_ID INTO NEW_CONTENT_ID
+			FROM CONTENTS
+			WHERE CONTENT_ID = I;
+			IF NEW_CONTENT_ID IS NULL THEN
+				RETURN I;
+			END IF;
+		END LOOP;
+		RETURN MAX_CONTENT_ID + 1;
+	END IF;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_new_content_id() OWNER TO epathshala;
+
+--
 -- Name: get_new_course_id(); Type: FUNCTION; Schema: public; Owner: epathshala
 --
 
@@ -1186,6 +1234,26 @@ $$;
 ALTER FUNCTION public.get_user_id(param_email character varying, param_security_key character varying, param_type boolean) OWNER TO epathshala;
 
 --
+-- Name: insert_content(character varying, bigint, character varying, character varying); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.insert_content(param_content_type character varying, param_course_id bigint, param_title character varying, param_description character varying) RETURNS bigint
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	NEW_CONTENT_ID BIGINT;
+BEGIN
+	NEW_CONTENT_ID := GET_NEW_CONTENT_ID();
+	INSERT INTO CONTENTS (CONTENT_ID, TITLE, DESCRIPTION, COURSE_ID, CONTENT_TYPE)
+	VALUES (NEW_CONTENT_ID, PARAM_TITLE, PARAM_DESCRIPTION, PARAM_COURSE_ID, PARAM_CONTENT_TYPE);
+	RETURN NEW_CONTENT_ID;
+END;
+$$;
+
+
+ALTER FUNCTION public.insert_content(param_content_type character varying, param_course_id bigint, param_title character varying, param_description character varying) OWNER TO epathshala;
+
+--
 -- Name: insert_course(character varying, character varying, character varying); Type: FUNCTION; Schema: public; Owner: epathshala
 --
 
@@ -1312,59 +1380,64 @@ $$;
 ALTER PROCEDURE public.insert_teacher(IN param_user_id bigint) OWNER TO epathshala;
 
 --
--- Name: insert_user(character varying, character varying, character varying, integer, integer, integer, character varying, character varying); Type: FUNCTION; Schema: public; Owner: epathshala
+-- Name: insert_user(character varying, character varying, character varying, character varying, boolean); Type: FUNCTION; Schema: public; Owner: epathshala
 --
 
-CREATE FUNCTION public.insert_user(param_full_name character varying, param_email character varying, param_password character varying, param_day integer, param_month integer, param_year integer, param_user_type character varying, param_gender character varying) RETURNS integer
+CREATE FUNCTION public.insert_user(param_full_name character varying, param_email character varying, param_password character varying, param_date_of_birth character varying, param_student boolean) RETURNS integer
     LANGUAGE plpgsql
     AS $$
 DECLARE
 	NEW_USER_ID BIGINT;
+	FOUND_USER BIGINT;
 BEGIN
-	IF LENGTH(PARAM_FULL_NAME) = 0 THEN
-		RETURN 1; --EMPTY NAME ERROR
+	NEW_USER_ID := GET_NEW_USER_ID();
+	IF PARAM_STUDENT THEN
+		SELECT USERS.USER_ID INTO FOUND_USER
+		FROM USERS
+		JOIN STUDENTS
+		ON(USERS.USER_ID = STUDENTS.USER_ID)
+		WHERE EMAIL = PARAM_EMAIL;
+		IF FOUND_USER IS NULL THEN
+			SELECT USER_ID INTO FOUND_USER
+			FROM USERS
+			WHERE EMAIL = PARAM_EMAIL;
+			IF FOUND_USER IS NULL THEN
+				INSERT INTO USERS (USER_ID, FULL_NAME, EMAIL, SECURITY_KEY, DATE_OF_BIRTH, USER_TYPE)
+				VALUES (NEW_USER_ID, PARAM_FULL_NAME, PARAM_EMAIL, PARAM_PASSWORD, TO_DATE(PARAM_DATE_OF_BIRTH, 'YYYY-MM-DD'), 'STUDENT');
+			ELSE
+				INSERT INTO STUDENTS (USER_ID)
+				VALUES (FOUND_USER);
+			END IF;
+		ELSE
+			RETURN 1; --USER PRESENT
+		END IF;
+	ELSE
+		SELECT USERS.USER_ID INTO FOUND_USER
+		FROM USERS
+		JOIN TEACHERS
+		ON(USERS.USER_ID = TEACHERS.USER_ID)
+		WHERE EMAIL = PARAM_EMAIL;
+		IF FOUND_USER IS NULL THEN
+			SELECT USER_ID INTO FOUND_USER
+			FROM USERS
+			WHERE EMAIL = PARAM_EMAIL;
+			IF FOUND_USER IS NULL THEN
+				INSERT INTO USERS (USER_ID, FULL_NAME, EMAIL, SECURITY_KEY, DATE_OF_BIRTH, USER_TYPE)
+				VALUES (NEW_USER_ID, PARAM_FULL_NAME, PARAM_EMAIL, PARAM_PASSWORD, TO_DATE(PARAM_DATE_OF_BIRTH, 'YYYY-MM-DD'), 'TEACHERS');
+			ELSE
+				INSERT INTO TEACHERS (USER_ID)
+				VALUES (FOUND_USER);
+			END IF;
+		ELSE
+			RETURN 1; --USER PRESENT
+		END IF;
 	END IF;
-	IF LENGTH(PARAM_EMAIL) = 0 THEN
-		RETURN 2; --EMPTY EMAIL ERROR
-	END IF;
-	IF PARAM_EMAIL NOT LIKE '%_@_%.___' THEN
-		RETURN 3; --INVALID EMAIL ERROR
-	END IF;
-	IF LENGTH(PARAM_PASSWORD) < 8 THEN
-		RETURN 4; --PASSWORD TOO SHORT ERROR
-	END IF;
-	IF LENGTH(PARAM_PASSWORD) > 32 THEN
-		RETURN 5; --PASSWORD TOO LONG ERROR
-	END IF;
-	IF NOT IS_VALID_DATE(PARAM_DAY, PARAM_MONTH, PARAM_YEAR) THEN
-		RETURN 6; --INVALID DATE ERROR
-	END IF;
-	SELECT USERS.USER_ID INTO NEW_USER_ID
-	FROM USERS
-	JOIN STUDENTS
-	ON(USERS.USER_ID = STUDENTS.USER_ID)
-	WHERE EMAIL = PARAM_EMAIL;
-	IF NEW_USER_ID IS NOT NULL THEN
-		RETURN 7; --STUDENT ALREADY PRESENT
-	END IF;
-	SELECT USERS.USER_ID INTO NEW_USER_ID
-	FROM USERS
-	JOIN TEACHERS
-	ON(USERS.USER_ID = TEACHERS.USER_ID)
-	WHERE EMAIL = PARAM_EMAIL;
-	IF NEW_USER_ID IS NOT NULL THEN
-		RETURN 8; --TEACHER ALREADY PRESENT
-	END IF;
-	NEW_USER_ID = GET_NEW_USER_ID();
-	INSERT INTO USERS
-	(USER_ID, FULL_NAME, EMAIL, SECURITY_KEY, USER_TYPE, GENDER)
-	VALUES(NEW_USER_ID, PARAM_FULL_NAME, PARAM_EMAIL, PARAM_PASSWORD, PARAM_USER_TYPE, PARAM_GENDER);
 	RETURN 0; --SUCCESS
 END;
 $$;
 
 
-ALTER FUNCTION public.insert_user(param_full_name character varying, param_email character varying, param_password character varying, param_day integer, param_month integer, param_year integer, param_user_type character varying, param_gender character varying) OWNER TO epathshala;
+ALTER FUNCTION public.insert_user(param_full_name character varying, param_email character varying, param_password character varying, param_date_of_birth character varying, param_student boolean) OWNER TO epathshala;
 
 --
 -- Name: insert_user_trigger(); Type: FUNCTION; Schema: public; Owner: epathshala
@@ -1553,6 +1626,27 @@ $$;
 ALTER PROCEDURE public.update_comment_rate(IN param_comment_id bigint, IN param_rate numeric) OWNER TO epathshala;
 
 --
+-- Name: update_course(bigint, character varying, character varying, integer); Type: PROCEDURE; Schema: public; Owner: epathshala
+--
+
+CREATE PROCEDURE public.update_course(IN param_course_id bigint, IN param_title character varying, IN param_description character varying, IN param_price integer)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	UPDATE COURSES
+	SET
+		TITLE = PARAM_TITLE,
+		DESCRIPTION = PARAM_DESCRIPTION,
+		PRICE = PARAM_PRICE
+	WHERE
+		COURSE_ID = PARAM_COURSE_ID;
+END;
+$$;
+
+
+ALTER PROCEDURE public.update_course(IN param_course_id bigint, IN param_title character varying, IN param_description character varying, IN param_price integer) OWNER TO epathshala;
+
+--
 -- Name: update_user_details(bigint, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: public; Owner: epathshala
 --
 
@@ -1584,6 +1678,38 @@ $$;
 
 
 ALTER FUNCTION public.update_user_details(param_user_id bigint, param_full_name character varying, param_email character varying, param_password character varying, param_bio character varying, param_date_of_birth character varying) OWNER TO epathshala;
+
+--
+-- Name: update_video(bigint, character varying, character varying); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.update_video(param_content_id bigint, param_title character varying, param_description character varying) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	DUPLICATE_VIDEO_ID BIGINT;
+	CONTENT_COURSE_ID BIGINT;
+BEGIN
+	SELECT COURSE_ID INTO CONTENT_COURSE_ID
+	FROM CONTENTS
+	WHERE CONTENT_ID = PARAM_CONTENT_ID;
+	SELECT CONTENT_ID INTO DUPLICATE_VIDEO_ID
+	FROM CONTENTS
+	WHERE CONTENT_TYPE = 'VIDEO' AND TITLE = PARAM_TITLE AND COURSE_ID = CONTENT_COURSE_ID AND CONTENT_ID != PARAM_CONTENT_ID;
+	IF DUPLICATE_VIDEO_ID IS NOT NULL THEN
+		RETURN -1; --DUPLICATE NAME ERROR
+	END IF;
+	UPDATE CONTENTS
+	SET
+		TITLE = PARAM_TITLE,
+		DESCRIPTION = PARAM_DESCRIPTION
+	WHERE CONTENT_ID  = PARAM_CONTENT_ID;
+	RETURN 0; --SUCCESS
+END;
+$$;
+
+
+ALTER FUNCTION public.update_video(param_content_id bigint, param_title character varying, param_description character varying) OWNER TO epathshala;
 
 SET default_tablespace = '';
 
@@ -1665,7 +1791,7 @@ ALTER SEQUENCE public.content_viewers_view_id_seq OWNED BY public.content_viewer
 
 CREATE TABLE public.contents (
     content_id bigint NOT NULL,
-    date_of_creation date,
+    date_of_creation date DEFAULT CURRENT_DATE,
     content_type character(10) NOT NULL,
     title character varying DEFAULT ''::character varying,
     description character(100) DEFAULT ''::bpchar,
@@ -1741,7 +1867,7 @@ CREATE TABLE public.courses (
     date_of_creation date DEFAULT CURRENT_DATE NOT NULL,
     price integer DEFAULT 0,
     creator_id bigint,
-    rate numeric DEFAULT 0,
+    rate numeric,
     enroll_count bigint DEFAULT 0,
     CONSTRAINT courses_course_id_check CHECK ((course_id > 0)),
     CONSTRAINT courses_enroll_count_check CHECK ((enroll_count >= 0)),
@@ -4640,6 +4766,7 @@ COPY public.contents (content_id, date_of_creation, content_type, title, descrip
 102	2020-11-13	VIDEO     	Scarcity	Description of video 'Scarcity'                                                                     	8	4.2500000000000000	16
 103	2020-11-13	VIDEO     	Scarcity and rivalry	Description of video 'Scarcity and rivalry'                                                         	8	2.4444444444444444	47
 75	2020-10-15	PAGE      	Properties of translations	Description of page 'Properties of translations'                                                    	3	\N	2
+110	2022-08-26	VIDEO     	A Video	Description of a video                                                                              	11	\N	0
 35	2019-10-01	VIDEO     	Subtracting polynomials	Description of video 'Subtracting polynomials'                                                      	2	\N	2
 37	2019-10-01	PAGE      	Adding and subtracting polynomials review	Description of page 'Adding and subtracting polynomials review'                                     	2	1.00000000000000000000	4
 11	2019-10-19	PAGE      	Evaluating expressions with one variable	Description of page 'Evaluating expressions with one variable'                                      	1	2.7500000000000000	15
@@ -4692,6 +4819,320 @@ COPY public.contents (content_id, date_of_creation, content_type, title, descrip
 --
 
 COPY public.course_remain_contents (user_id, course_id, complete_count, remain_count) FROM stdin;
+1	1	0	28
+1	2	0	29
+1	3	0	21
+1	4	0	10
+1	5	0	6
+1	6	0	4
+2	1	0	28
+3	1	0	28
+3	2	0	29
+3	3	0	21
+3	4	0	10
+3	5	0	6
+4	1	0	28
+5	1	0	28
+5	2	0	29
+5	3	0	21
+5	4	0	10
+5	5	0	6
+6	1	0	28
+6	2	0	29
+6	3	0	21
+6	4	0	10
+7	1	0	28
+7	2	0	29
+7	3	0	21
+8	1	0	28
+8	2	0	29
+8	3	0	21
+8	4	0	10
+9	1	0	28
+9	2	0	29
+9	3	0	21
+9	4	0	10
+9	5	0	6
+9	6	0	4
+9	7	0	2
+9	8	0	3
+9	9	0	3
+10	1	0	28
+10	2	0	29
+10	3	0	21
+10	4	0	10
+10	5	0	6
+10	6	0	4
+10	7	0	2
+10	8	0	3
+10	9	0	3
+11	1	0	28
+11	2	0	29
+11	3	0	21
+11	4	0	10
+11	5	0	6
+11	6	0	4
+11	7	0	2
+11	8	0	3
+12	1	0	28
+12	2	0	29
+12	3	0	21
+12	4	0	10
+12	5	0	6
+12	6	0	4
+12	7	0	2
+12	8	0	3
+12	9	0	3
+12	10	0	3
+13	1	0	28
+13	2	0	29
+13	3	0	21
+14	1	0	28
+14	2	0	29
+14	3	0	21
+14	4	0	10
+15	1	0	28
+15	2	0	29
+15	3	0	21
+15	4	0	10
+15	5	0	6
+15	6	0	4
+15	7	0	2
+15	8	0	3
+15	9	0	3
+16	1	0	28
+16	2	0	29
+16	3	0	21
+16	4	0	10
+16	5	0	6
+16	6	0	4
+16	7	0	2
+16	8	0	3
+16	9	0	3
+16	10	0	3
+17	1	0	28
+18	1	0	28
+18	2	0	29
+18	3	0	21
+18	4	0	10
+18	5	0	6
+18	6	0	4
+18	7	0	2
+18	8	0	3
+18	9	0	3
+18	10	0	3
+19	1	0	28
+19	2	0	29
+19	3	0	21
+19	4	0	10
+19	5	0	6
+19	6	0	4
+19	7	0	2
+19	8	0	3
+19	9	0	3
+20	1	0	28
+20	2	0	29
+20	3	0	21
+20	4	0	10
+20	5	0	6
+20	6	0	4
+20	7	0	2
+20	8	0	3
+20	9	0	3
+20	10	0	3
+21	1	0	28
+21	2	0	29
+21	3	0	21
+21	4	0	10
+21	5	0	6
+21	6	0	4
+21	7	0	2
+21	8	0	3
+22	1	0	28
+22	2	0	29
+22	3	0	21
+22	4	0	10
+22	5	0	6
+22	6	0	4
+22	7	0	2
+22	8	0	3
+22	9	0	3
+22	10	0	3
+23	1	0	28
+23	2	0	29
+23	3	0	21
+23	4	0	10
+23	5	0	6
+23	6	0	4
+23	7	0	2
+23	8	0	3
+23	9	0	3
+24	1	0	28
+24	2	0	29
+24	3	0	21
+24	4	0	10
+25	1	0	28
+25	2	0	29
+25	3	0	21
+25	4	0	10
+25	5	0	6
+25	6	0	4
+25	7	0	2
+25	8	0	3
+26	1	0	28
+26	2	0	29
+26	3	0	21
+26	4	0	10
+26	5	0	6
+26	6	0	4
+27	1	0	28
+27	2	0	29
+27	3	0	21
+27	4	0	10
+27	5	0	6
+27	6	0	4
+27	7	0	2
+28	1	0	28
+28	2	0	29
+28	3	0	21
+29	1	0	28
+30	1	0	28
+30	2	0	29
+30	3	0	21
+30	4	0	10
+30	5	0	6
+30	6	0	4
+30	7	0	2
+31	1	0	28
+31	2	0	29
+31	3	0	21
+31	4	0	10
+31	5	0	6
+32	1	0	28
+32	2	0	29
+33	1	0	28
+33	2	0	29
+33	3	0	21
+33	4	0	10
+33	5	0	6
+33	6	0	4
+33	7	0	2
+34	1	0	28
+34	2	0	29
+34	3	0	21
+34	4	0	10
+34	5	0	6
+34	6	0	4
+34	7	0	2
+34	8	0	3
+34	9	0	3
+34	10	0	3
+35	1	0	28
+35	2	0	29
+35	3	0	21
+35	4	0	10
+35	5	0	6
+35	6	0	4
+35	7	0	2
+35	8	0	3
+35	9	0	3
+36	1	0	28
+36	2	0	29
+36	3	0	21
+36	4	0	10
+36	5	0	6
+37	1	0	28
+37	2	0	29
+37	3	0	21
+37	4	0	10
+37	5	0	6
+37	6	0	4
+38	1	0	28
+38	2	0	29
+38	3	0	21
+38	4	0	10
+38	5	0	6
+38	6	0	4
+39	1	0	28
+39	2	0	29
+39	3	0	21
+39	4	0	10
+39	5	0	6
+39	6	0	4
+39	7	0	2
+39	8	0	3
+40	1	0	28
+40	2	0	29
+40	3	0	21
+40	4	0	10
+41	1	0	28
+41	2	0	29
+41	3	0	21
+41	4	0	10
+41	5	0	6
+41	6	0	4
+41	7	0	2
+42	1	0	28
+42	2	0	29
+42	3	0	21
+42	4	0	10
+42	5	0	6
+42	6	0	4
+42	7	0	2
+42	8	0	3
+42	9	0	3
+42	10	0	3
+43	1	0	28
+43	2	0	29
+43	3	0	21
+43	4	0	10
+43	5	0	6
+43	6	0	4
+43	7	0	2
+43	8	0	3
+43	9	0	3
+43	10	0	3
+44	1	0	28
+44	2	0	29
+44	3	0	21
+44	4	0	10
+44	5	0	6
+44	6	0	4
+44	7	0	2
+44	8	0	3
+45	1	0	28
+45	2	0	29
+45	3	0	21
+46	1	0	28
+46	2	0	29
+46	3	0	21
+46	4	0	10
+47	1	0	28
+47	2	0	29
+47	3	0	21
+47	4	0	10
+47	5	0	6
+48	1	0	28
+48	2	0	29
+48	3	0	21
+49	1	0	28
+49	2	0	29
+49	3	0	21
+49	4	0	10
+49	5	0	6
+49	6	0	4
+49	7	0	2
+49	8	0	3
+49	9	0	3
+50	1	0	28
+50	2	0	29
+50	3	0	21
+50	4	0	10
+50	5	0	6
+50	6	0	4
+50	7	0	2
+50	8	0	3
+50	9	0	3
 \.
 
 
@@ -4721,16 +5162,17 @@ COPY public.course_tags (tag_id, course_id) FROM stdin;
 --
 
 COPY public.courses (course_id, title, description, date_of_creation, price, creator_id, rate, enroll_count) FROM stdin;
-6	Statistics and Probablity	Learn statistics and probablity                                                                     	2020-05-08	700	56	2.6458333333333333	20
-7	Computer Programming	Learn the art of programming                                                                        	2020-10-16	1000	57	3.5833333333333333	14
-9	Computers and Internet	Learn how the amazing world of internet works                                                       	2021-03-13	1200	59	3.3095238095238095	5
-5	Statistics	Learn statistics basics                                                                             	2020-03-12	700	55	3.1426767676767677	30
-10	Macroeconomics	Learn macroeconomics                                                                                	2021-05-15	500	60	3.5416666666666667	1
-2	Algebra 2	Some advanced topics on algebra                                                                     	2019-10-01	500	52	2.93069165682802046818	47
-4	Trigonometry	Master trigonometry                                                                                 	2020-03-11	600	54	2.8079365079365079	33
-8	Microeconomics	Learn microeconomics                                                                                	2020-11-13	500	58	3.8981481481481481	8
+11	Course	Course Description                                                                                  	2022-08-25	0	51	\N	0
 1	Algebra 1	Introduction to algebra                                                                             	2019-10-19	500	51	3.0950396825396825	50
-3	Geometry	Learn geometry having fun                                                                           	2020-10-15	600	53	2.9301190476190476	44
+2	Algebra 2	Some advanced topics on algebra                                                                     	2019-10-01	500	52	2.93069165682802046818	46
+3	Geometry	Learn geometry having fun                                                                           	2020-10-15	600	53	2.9301190476190476	45
+4	Trigonometry	Master trigonometry                                                                                 	2020-03-11	600	54	2.8079365079365079	40
+5	Statistics	Learn statistics basics                                                                             	2020-03-12	700	55	3.1426767676767677	34
+6	Statistics and Probablity	Learn statistics and probablity                                                                     	2020-05-08	700	56	2.6458333333333333	29
+7	Computer Programming	Learn the art of programming                                                                        	2020-10-16	1000	57	3.5833333333333333	25
+8	Microeconomics	Learn microeconomics                                                                                	2020-11-13	500	58	3.8981481481481481	21
+9	Computers and Internet	Learn how the amazing world of internet works                                                       	2021-03-13	1200	59	3.3095238095238095	16
+10	Macroeconomics	Learn macroeconomics                                                                                	2021-05-15	500	60	3.5416666666666667	8
 \.
 
 
@@ -4739,258 +5181,320 @@ COPY public.courses (course_id, title, description, date_of_creation, price, cre
 --
 
 COPY public.enrolled_courses (user_id, course_id, date_of_join) FROM stdin;
-1	1	2020-01-08
-1	2	2020-01-08
-2	1	2020-05-16
-2	2	2020-05-16
-2	3	2020-05-16
-2	4	2020-05-16
-2	5	2020-05-16
-2	6	2020-05-16
-2	7	2020-05-16
-2	8	2020-05-16
-3	1	2021-07-15
-3	2	2021-07-15
-4	1	2021-12-14
-5	1	2021-06-28
-6	1	2021-04-06
-6	2	2021-04-06
-6	3	2021-04-06
-6	4	2021-04-06
-7	1	2020-03-15
-7	2	2020-03-15
-7	3	2020-03-15
-7	4	2020-03-15
-7	5	2020-03-15
-7	6	2020-03-15
-8	1	2021-09-05
-8	2	2021-09-05
-8	3	2021-09-05
-8	4	2021-09-05
-8	5	2021-09-05
-8	6	2021-09-05
-8	7	2021-09-05
-9	1	2021-03-02
-9	2	2021-03-02
-9	3	2021-03-02
-9	4	2021-03-02
-9	5	2021-03-02
-9	6	2021-03-02
-9	7	2021-03-02
-9	8	2021-03-02
-9	9	2021-03-02
-10	1	2021-05-04
-10	2	2021-05-04
-10	3	2021-05-04
-10	4	2021-05-04
-10	5	2021-05-04
-10	6	2021-05-04
-10	7	2021-05-04
-10	8	2021-05-04
-10	9	2021-05-04
-11	1	2021-01-04
-11	2	2021-01-04
-11	3	2021-01-04
-11	4	2021-01-04
-11	5	2021-01-04
-11	6	2021-01-04
-11	7	2021-01-04
-12	1	2020-10-16
-12	2	2020-10-16
-12	3	2020-10-16
-12	4	2020-10-16
-12	5	2020-10-16
-12	6	2020-10-16
-12	7	2020-10-16
-13	1	2020-03-08
-13	2	2020-03-08
-13	3	2020-03-08
-14	1	2021-02-15
-14	2	2021-02-15
-14	3	2021-02-15
-14	4	2021-02-15
-14	5	2021-02-15
-14	6	2021-02-15
-14	7	2021-02-15
-14	8	2021-02-15
-14	9	2021-02-15
-14	10	2021-02-15
-15	1	2021-07-03
-15	2	2021-07-03
-15	3	2021-07-03
-15	4	2021-07-03
-16	1	2020-02-16
-16	2	2020-02-16
-16	3	2020-02-16
-17	1	2020-01-26
-17	2	2020-01-26
-17	3	2020-01-26
-17	4	2020-01-26
-17	5	2020-01-26
-17	6	2020-01-26
-17	7	2020-01-26
-17	8	2020-01-26
-18	1	2021-03-23
-18	2	2021-03-23
-18	3	2021-03-23
-19	1	2021-04-09
-19	2	2021-04-09
-19	3	2021-04-09
-19	4	2021-04-09
-19	5	2021-04-09
-20	1	2020-02-17
-20	2	2020-02-17
-20	3	2020-02-17
-20	4	2020-02-17
-20	5	2020-02-17
-21	1	2020-02-11
-21	2	2020-02-11
-21	3	2020-02-11
-22	1	2020-04-21
-22	2	2020-04-21
-23	1	2021-02-16
-23	2	2021-02-16
-23	3	2021-02-16
-23	4	2021-02-16
-23	5	2021-02-16
-24	1	2020-08-01
-24	2	2020-08-01
-24	3	2020-08-01
-25	1	2020-12-15
-25	2	2020-12-15
-25	3	2020-12-15
-25	4	2020-12-15
-25	5	2020-12-15
-25	6	2020-12-15
-26	1	2021-07-20
-26	2	2021-07-20
-26	3	2021-07-20
-27	1	2021-01-01
-28	1	2020-04-27
-28	2	2020-04-27
-28	3	2020-04-27
-28	4	2020-04-27
-28	5	2020-04-27
-29	1	2020-12-13
-29	2	2020-12-13
-29	3	2020-12-13
-29	4	2020-12-13
-30	1	2021-08-25
-30	2	2021-08-25
-30	3	2021-08-25
-31	1	2020-05-17
-31	2	2020-05-17
-31	3	2020-05-17
-31	4	2020-05-17
-31	5	2020-05-17
-32	1	2020-05-15
-32	2	2020-05-15
-32	3	2020-05-15
-33	1	2021-12-22
-33	2	2021-12-22
-33	3	2021-12-22
-33	4	2021-12-22
-33	5	2021-12-22
-33	6	2021-12-22
-33	7	2021-12-22
-33	8	2021-12-22
-34	1	2021-04-28
-34	2	2021-04-28
-34	3	2021-04-28
-34	4	2021-04-28
-34	5	2021-04-28
-34	6	2021-04-28
-35	1	2021-03-15
-35	2	2021-03-15
-35	3	2021-03-15
-35	4	2021-03-15
-35	5	2021-03-15
-36	1	2020-09-04
-36	2	2020-09-04
-36	3	2020-09-04
-36	4	2020-09-04
-36	5	2020-09-04
-36	6	2020-09-04
-37	1	2021-01-28
-37	2	2021-01-28
-37	3	2021-01-28
-37	4	2021-01-28
-37	5	2021-01-28
-38	1	2021-11-05
-38	2	2021-11-05
-38	3	2021-11-05
-38	4	2021-11-05
-38	5	2021-11-05
-39	1	2020-11-13
-39	2	2020-11-13
-39	3	2020-11-13
-39	4	2020-11-13
-39	5	2020-11-13
-39	6	2020-11-13
-39	7	2020-11-13
-39	8	2020-11-13
-39	9	2020-11-13
-40	1	2020-05-26
-40	2	2020-05-26
-40	3	2020-05-26
-41	1	2020-08-16
-41	2	2020-08-16
-41	3	2020-08-16
-41	4	2020-08-16
-41	5	2020-08-16
-41	6	2020-08-16
-41	7	2020-08-16
-42	1	2021-05-02
-42	2	2021-05-02
-42	3	2021-05-02
-42	4	2021-05-02
-42	5	2021-05-02
-42	6	2021-05-02
-42	7	2021-05-02
-43	1	2021-03-03
-43	2	2021-03-03
-43	3	2021-03-03
-43	4	2021-03-03
-43	5	2021-03-03
-43	6	2021-03-03
-43	7	2021-03-03
-43	8	2021-03-03
-43	9	2021-03-03
-44	1	2021-12-07
-44	2	2021-12-07
-44	3	2021-12-07
-45	1	2020-10-06
-45	2	2020-10-06
-45	3	2020-10-06
-45	4	2020-10-06
-46	1	2021-08-20
-46	2	2021-08-20
-46	3	2021-08-20
-46	4	2021-08-20
-46	5	2021-08-20
-46	6	2021-08-20
-47	1	2021-09-15
-47	2	2021-09-15
-47	3	2021-09-15
-47	4	2021-09-15
-47	5	2021-09-15
-47	6	2021-09-15
-47	7	2021-09-15
-48	1	2020-11-28
-48	2	2020-11-28
-48	3	2020-11-28
-48	4	2020-11-28
-48	5	2020-11-28
-48	6	2020-11-28
-49	1	2020-07-11
-49	2	2020-07-11
-49	3	2020-07-11
-49	4	2020-07-11
-49	5	2020-07-11
-50	1	2021-07-20
-50	2	2021-07-20
-5	5	2022-08-15
-1	3	2022-08-20
+1	1	2022-08-25
+1	2	2022-08-25
+1	3	2022-08-25
+1	4	2022-08-25
+1	5	2022-08-25
+1	6	2022-08-25
+2	1	2022-08-25
+3	1	2022-08-25
+3	2	2022-08-25
+3	3	2022-08-25
+3	4	2022-08-25
+3	5	2022-08-25
+4	1	2022-08-25
+5	1	2022-08-25
+5	2	2022-08-25
+5	3	2022-08-25
+5	4	2022-08-25
+5	5	2022-08-25
+6	1	2022-08-25
+6	2	2022-08-25
+6	3	2022-08-25
+6	4	2022-08-25
+7	1	2022-08-25
+7	2	2022-08-25
+7	3	2022-08-25
+8	1	2022-08-25
+8	2	2022-08-25
+8	3	2022-08-25
+8	4	2022-08-25
+9	1	2022-08-25
+9	2	2022-08-25
+9	3	2022-08-25
+9	4	2022-08-25
+9	5	2022-08-25
+9	6	2022-08-25
+9	7	2022-08-25
+9	8	2022-08-25
+9	9	2022-08-25
+10	1	2022-08-25
+10	2	2022-08-25
+10	3	2022-08-25
+10	4	2022-08-25
+10	5	2022-08-25
+10	6	2022-08-25
+10	7	2022-08-25
+10	8	2022-08-25
+10	9	2022-08-25
+11	1	2022-08-25
+11	2	2022-08-25
+11	3	2022-08-25
+11	4	2022-08-25
+11	5	2022-08-25
+11	6	2022-08-25
+11	7	2022-08-25
+11	8	2022-08-25
+12	1	2022-08-25
+12	2	2022-08-25
+12	3	2022-08-25
+12	4	2022-08-25
+12	5	2022-08-25
+12	6	2022-08-25
+12	7	2022-08-25
+12	8	2022-08-25
+12	9	2022-08-25
+12	10	2022-08-25
+13	1	2022-08-25
+13	2	2022-08-25
+13	3	2022-08-25
+14	1	2022-08-25
+14	2	2022-08-25
+14	3	2022-08-25
+14	4	2022-08-25
+15	1	2022-08-25
+15	2	2022-08-25
+15	3	2022-08-25
+15	4	2022-08-25
+15	5	2022-08-25
+15	6	2022-08-25
+15	7	2022-08-25
+15	8	2022-08-25
+15	9	2022-08-25
+16	1	2022-08-25
+16	2	2022-08-25
+16	3	2022-08-25
+16	4	2022-08-25
+16	5	2022-08-25
+16	6	2022-08-25
+16	7	2022-08-25
+16	8	2022-08-25
+16	9	2022-08-25
+16	10	2022-08-25
+17	1	2022-08-25
+18	1	2022-08-25
+18	2	2022-08-25
+18	3	2022-08-25
+18	4	2022-08-25
+18	5	2022-08-25
+18	6	2022-08-25
+18	7	2022-08-25
+18	8	2022-08-25
+18	9	2022-08-25
+18	10	2022-08-25
+19	1	2022-08-25
+19	2	2022-08-25
+19	3	2022-08-25
+19	4	2022-08-25
+19	5	2022-08-25
+19	6	2022-08-25
+19	7	2022-08-25
+19	8	2022-08-25
+19	9	2022-08-25
+20	1	2022-08-25
+20	2	2022-08-25
+20	3	2022-08-25
+20	4	2022-08-25
+20	5	2022-08-25
+20	6	2022-08-25
+20	7	2022-08-25
+20	8	2022-08-25
+20	9	2022-08-25
+20	10	2022-08-25
+21	1	2022-08-25
+21	2	2022-08-25
+21	3	2022-08-25
+21	4	2022-08-25
+21	5	2022-08-25
+21	6	2022-08-25
+21	7	2022-08-25
+21	8	2022-08-25
+22	1	2022-08-25
+22	2	2022-08-25
+22	3	2022-08-25
+22	4	2022-08-25
+22	5	2022-08-25
+22	6	2022-08-25
+22	7	2022-08-25
+22	8	2022-08-25
+22	9	2022-08-25
+22	10	2022-08-25
+23	1	2022-08-25
+23	2	2022-08-25
+23	3	2022-08-25
+23	4	2022-08-25
+23	5	2022-08-25
+23	6	2022-08-25
+23	7	2022-08-25
+23	8	2022-08-25
+23	9	2022-08-25
+24	1	2022-08-25
+24	2	2022-08-25
+24	3	2022-08-25
+24	4	2022-08-25
+25	1	2022-08-25
+25	2	2022-08-25
+25	3	2022-08-25
+25	4	2022-08-25
+25	5	2022-08-25
+25	6	2022-08-25
+25	7	2022-08-25
+25	8	2022-08-25
+26	1	2022-08-25
+26	2	2022-08-25
+26	3	2022-08-25
+26	4	2022-08-25
+26	5	2022-08-25
+26	6	2022-08-25
+27	1	2022-08-25
+27	2	2022-08-25
+27	3	2022-08-25
+27	4	2022-08-25
+27	5	2022-08-25
+27	6	2022-08-25
+27	7	2022-08-25
+28	1	2022-08-25
+28	2	2022-08-25
+28	3	2022-08-25
+29	1	2022-08-25
+30	1	2022-08-25
+30	2	2022-08-25
+30	3	2022-08-25
+30	4	2022-08-25
+30	5	2022-08-25
+30	6	2022-08-25
+30	7	2022-08-25
+31	1	2022-08-25
+31	2	2022-08-25
+31	3	2022-08-25
+31	4	2022-08-25
+31	5	2022-08-25
+32	1	2022-08-25
+32	2	2022-08-25
+33	1	2022-08-25
+33	2	2022-08-25
+33	3	2022-08-25
+33	4	2022-08-25
+33	5	2022-08-25
+33	6	2022-08-25
+33	7	2022-08-25
+34	1	2022-08-25
+34	2	2022-08-25
+34	3	2022-08-25
+34	4	2022-08-25
+34	5	2022-08-25
+34	6	2022-08-25
+34	7	2022-08-25
+34	8	2022-08-25
+34	9	2022-08-25
+34	10	2022-08-25
+35	1	2022-08-25
+35	2	2022-08-25
+35	3	2022-08-25
+35	4	2022-08-25
+35	5	2022-08-25
+35	6	2022-08-25
+35	7	2022-08-25
+35	8	2022-08-25
+35	9	2022-08-25
+36	1	2022-08-25
+36	2	2022-08-25
+36	3	2022-08-25
+36	4	2022-08-25
+36	5	2022-08-25
+37	1	2022-08-25
+37	2	2022-08-25
+37	3	2022-08-25
+37	4	2022-08-25
+37	5	2022-08-25
+37	6	2022-08-25
+38	1	2022-08-25
+38	2	2022-08-25
+38	3	2022-08-25
+38	4	2022-08-25
+38	5	2022-08-25
+38	6	2022-08-25
+39	1	2022-08-25
+39	2	2022-08-25
+39	3	2022-08-25
+39	4	2022-08-25
+39	5	2022-08-25
+39	6	2022-08-25
+39	7	2022-08-25
+39	8	2022-08-25
+40	1	2022-08-25
+40	2	2022-08-25
+40	3	2022-08-25
+40	4	2022-08-25
+41	1	2022-08-25
+41	2	2022-08-25
+41	3	2022-08-25
+41	4	2022-08-25
+41	5	2022-08-25
+41	6	2022-08-25
+41	7	2022-08-25
+42	1	2022-08-25
+42	2	2022-08-25
+42	3	2022-08-25
+42	4	2022-08-25
+42	5	2022-08-25
+42	6	2022-08-25
+42	7	2022-08-25
+42	8	2022-08-25
+42	9	2022-08-25
+42	10	2022-08-25
+43	1	2022-08-25
+43	2	2022-08-25
+43	3	2022-08-25
+43	4	2022-08-25
+43	5	2022-08-25
+43	6	2022-08-25
+43	7	2022-08-25
+43	8	2022-08-25
+43	9	2022-08-25
+43	10	2022-08-25
+44	1	2022-08-25
+44	2	2022-08-25
+44	3	2022-08-25
+44	4	2022-08-25
+44	5	2022-08-25
+44	6	2022-08-25
+44	7	2022-08-25
+44	8	2022-08-25
+45	1	2022-08-25
+45	2	2022-08-25
+45	3	2022-08-25
+46	1	2022-08-25
+46	2	2022-08-25
+46	3	2022-08-25
+46	4	2022-08-25
+47	1	2022-08-25
+47	2	2022-08-25
+47	3	2022-08-25
+47	4	2022-08-25
+47	5	2022-08-25
+48	1	2022-08-25
+48	2	2022-08-25
+48	3	2022-08-25
+49	1	2022-08-25
+49	2	2022-08-25
+49	3	2022-08-25
+49	4	2022-08-25
+49	5	2022-08-25
+49	6	2022-08-25
+49	7	2022-08-25
+49	8	2022-08-25
+49	9	2022-08-25
+50	1	2022-08-25
+50	2	2022-08-25
+50	3	2022-08-25
+50	4	2022-08-25
+50	5	2022-08-25
+50	6	2022-08-25
+50	7	2022-08-25
+50	8	2022-08-25
+50	9	2022-08-25
 \.
 
 
@@ -5221,6 +5725,7 @@ COPY public.students (user_id, date_of_join, rank_point) FROM stdin;
 48	2020-11-28	0
 49	2020-07-11	0
 50	2021-07-20	0
+61	2022-08-26	0
 \.
 
 
@@ -5265,9 +5770,10 @@ COPY public.teacher_specialities (teacher_id, speciality) FROM stdin;
 --
 
 COPY public.teachers (user_id, date_of_join, credit, rate) FROM stdin;
+61	2022-08-26	0	\N
 59	2021-03-13	0	3.3095238095238095
-53	2020-10-15	0	2.9301190476190476
 51	2019-10-19	1000	3.0950396825396825
+53	2020-10-15	0	2.9301190476190476
 55	2020-03-12	2800	3.1426767676767677
 56	2020-05-08	0	2.6458333333333333
 60	2021-05-15	0	3.5416666666666667
@@ -5343,6 +5849,7 @@ COPY public.users (user_id, full_name, security_key, date_of_birth, bio, email, 
 59	Hubert Rodriguez	12345678                        	1988-11-19	                                                                                                    	hubert3151@gmail.com	TEACHER   
 51	Martha Marbley	undefined                       	1986-05-26	                                                                                                    	martha4381@gmail.com	TEACHER   
 5	Michelle Kimmell	12345678                        	1992-01-01	                                                                                                    	michelle2802@gmail.com	STUDENT   
+61	Siam	12345678                        	2000-10-16	                                                                                                    	siam11651@outlook.com	STUDENT   
 \.
 
 
