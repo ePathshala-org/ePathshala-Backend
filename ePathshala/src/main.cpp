@@ -27,6 +27,10 @@ int main()
         {
             UploadVideo(httpRequestPtr, response, dbClient, httpAppFramework);
         }
+        else if(httpRequestPtr->getHeader("type") == "update-video")
+        {
+            UpdateVideo(httpRequestPtr, response, dbClient, httpAppFramework);
+        }
         else
         {
             std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();

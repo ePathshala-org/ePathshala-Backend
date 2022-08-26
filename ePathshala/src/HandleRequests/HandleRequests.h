@@ -33,3 +33,4 @@
 #include "root/Delete/Content.h"
 #include "root/Update/Course.h"
 #include "root/Upload/Video.h"
+#include "root/Update/Video.h"
