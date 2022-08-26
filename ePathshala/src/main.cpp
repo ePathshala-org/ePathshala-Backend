@@ -31,6 +31,20 @@ int main()
         {
             UpdateVideo(httpRequestPtr, response, dbClient, httpAppFramework);
         }
+        else if(httpRequestPtr->getHeader("type") == "create-new-account")
+        {
+            std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
+            Json::Value &request = *reqJsonPtr.get();
+
+            InsertUser(request, response, dbClient);
+        }
+        else if(httpRequestPtr->getHeader("type") == "login")
+        {
+            std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
+            Json::Value &request = *reqJsonPtr.get();
+
+            
+        }
         else
         {
             std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();

@@ -4,8 +4,6 @@ void GetCourseDetails(Json::Value &request, Json::Value &response, drogon::orm::
 {
     std::clog << "Get \"course-details\" request" << std::endl;
 
-    // std::clog << request << std::endl;
-
     std::stringstream queryStream;
 
     queryStream.str("SELECT * FROM GET_COURSE_DETAILS($1)");

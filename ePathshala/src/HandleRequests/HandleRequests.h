@@ -34,3 +34,4 @@
 #include "root/Update/Course.h"
 #include "root/Upload/Video.h"
 #include "root/Update/Video.h"
+#include "root/Insert/User.h"
