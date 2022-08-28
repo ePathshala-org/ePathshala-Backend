@@ -52,6 +52,13 @@ int main()
 
             GetQuestions(request, response, dbClient);
         }
+        else if(httpRequestPtr->getHeader("type") == "get-question-details")
+        {
+            std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
+            Json::Value &request = *reqJsonPtr.get();
+
+            GetQuestionDetails(request, response, dbClient, httpAppFramework);
+        }
         else if(httpRequestPtr->getHeader("type") == "login")
         {
             std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
