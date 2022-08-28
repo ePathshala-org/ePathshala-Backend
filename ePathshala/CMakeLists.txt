@@ -45,6 +45,8 @@ add_executable(ePathshala
     "src/HandleRequests/root/Update/Video.cpp"
     "src/HandleRequests/root/Insert/User.cpp"
     "src/HandleRequests/root/Login.cpp"
+    "src/HandleRequests/root/Insert/Question.cpp"
+    "src/HandleRequests/root/GetQuestions.cpp"
 )
 
 find_package(Drogon REQUIRED)

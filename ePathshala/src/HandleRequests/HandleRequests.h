@@ -36,3 +36,5 @@
 #include "root/Update/Video.h"
 #include "root/Insert/User.h"
 #include "root/Login.h"
+#include "root/Insert/Question.h"
+#include "root/GetQuestions.h"

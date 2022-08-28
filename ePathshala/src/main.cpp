@@ -38,6 +38,20 @@ int main()
 
             InsertUser(request, response, dbClient);
         }
+        else if(httpRequestPtr->getHeader("type") == "insert-question")
+        {
+            std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
+            Json::Value &request = *reqJsonPtr.get();
+
+            InsertQuestion(request, response, dbClient, httpAppFramework);
+        }
+        else if(httpRequestPtr->getHeader("type") == "get-questions")
+        {
+            std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
+            Json::Value &request = *reqJsonPtr.get();
+
+            GetQuestions(request, response, dbClient);
+        }
         else if(httpRequestPtr->getHeader("type") == "login")
         {
             std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
