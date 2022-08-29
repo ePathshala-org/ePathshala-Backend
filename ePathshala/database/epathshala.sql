@@ -1758,6 +1758,37 @@ $$;
 ALTER PROCEDURE public.update_course(IN param_course_id bigint, IN param_title character varying, IN param_description character varying, IN param_price integer) OWNER TO epathshala;
 
 --
+-- Name: update_page(bigint, character varying); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.update_page(param_content_id bigint, param_title character varying) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	DUPLICATE_PAGE_ID BIGINT;
+	CONTENT_COURSE_ID BIGINT;
+BEGIN
+	SELECT COURSE_ID INTO CONTENT_COURSE_ID
+	FROM CONTENTS
+	WHERE CONTENT_ID = PARAM_CONTENT_ID;
+	SELECT CONTENT_ID INTO DUPLICATE_PAGE_ID
+	FROM CONTENTS
+	WHERE CONTENT_TYPE = 'PAGE' AND TITLE = PARAM_TITLE AND COURSE_ID = CONTENT_COURSE_ID AND CONTENT_ID != PARAM_CONTENT_ID;
+	IF DUPLICATE_PAGE_ID IS NOT NULL THEN
+		RETURN -1; --DUPLICATE NAME ERROR
+	END IF;
+	UPDATE CONTENTS
+	SET
+		TITLE = PARAM_TITLE
+	WHERE CONTENT_ID  = PARAM_CONTENT_ID;
+	RETURN 0; --SUCCESS
+END;
+$$;
+
+
+ALTER FUNCTION public.update_page(param_content_id bigint, param_title character varying) OWNER TO epathshala;
+
+--
 -- Name: update_user_details(bigint, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: public; Owner: epathshala
 --
 
@@ -2103,7 +2134,7 @@ CREATE TABLE public.teachers (
     user_id bigint NOT NULL,
     date_of_join date DEFAULT CURRENT_DATE NOT NULL,
     credit integer DEFAULT 0,
-    rate numeric,
+    rate numeric DEFAULT 0,
     CONSTRAINT teachers_credit_check CHECK ((credit >= 0)),
     CONSTRAINT teachers_rate_check CHECK ((((0)::numeric <= rate) AND (rate <= (5)::numeric)))
 );
@@ -4810,6 +4841,7 @@ COPY public.contents (content_id, date_of_creation, content_type, title, descrip
 97	2020-05-08	VIDEO     	Reading bar graphs	Description of video 'Reading bar graphs'                                                           	6	3.0833333333333333	49
 108	2021-05-15	VIDEO     	Scarcity	Description of video 'Scarcity'                                                                     	10	2.6250000000000000	38
 100	2020-10-16	PAGE      	Learn programming on ePathshala	Description of page 'Learn programming on ePathshala'                                               	7	\N	1
+111	2022-08-29	PAGE      	A Page	                                                                                                    	11	\N	0
 23	2019-10-19	QUIZ      	Combining like terms with rational coefficients	Description of quiz 'Combining like terms with rational coefficients'                               	1	3.5000000000000000	13
 53	2019-10-01	QUIZ      	Multiply binomials by polynomials	Description of quiz 'Multiply binomials by polynomials'                                             	2	2.7500000000000000	48
 72	2020-10-15	VIDEO     	Translating shapes	Description of video 'Translating shapes'                                                           	3	2.0000000000000000	16
@@ -5878,10 +5910,10 @@ COPY public.teacher_specialities (teacher_id, speciality) FROM stdin;
 --
 
 COPY public.teachers (user_id, date_of_join, credit, rate) FROM stdin;
-61	2022-08-26	0	\N
+61	2022-08-26	0	0
 59	2021-03-13	0	3.3095238095238095
-51	2019-10-19	1000	3.0950396825396825
 53	2020-10-15	0	2.9301190476190476
+51	2019-10-19	1000	3.0950396825396825
 55	2020-03-12	2800	3.1426767676767677
 56	2020-05-08	0	2.6458333333333333
 60	2021-05-15	0	3.5416666666666667

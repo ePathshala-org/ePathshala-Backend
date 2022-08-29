@@ -87,6 +87,13 @@ int main()
 
             UpdatePage(request, response, dbClient, httpAppFramework);
         }
+        else if(httpRequestPtr->getHeader("type") == "insert-view")
+        {
+            std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
+            Json::Value &request = *reqJsonPtr.get();
+
+            InsertView(request, response, dbClient);
+        }
         else
         {
             std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
