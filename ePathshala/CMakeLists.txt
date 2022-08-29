@@ -53,6 +53,7 @@ add_executable(ePathshala
     "src/HandleRequests/root/Update/Page.cpp"
     "src/HandleRequests/root/Insert/View.cpp"
     "src/HandleRequests/root/Update/ContentRate.cpp"
+    "src/HandleRequests/root/GetIndividualContentRate.cpp"
 )
 
 find_package(Drogon REQUIRED)
