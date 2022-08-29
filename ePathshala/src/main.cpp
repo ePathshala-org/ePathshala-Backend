@@ -94,6 +94,13 @@ int main()
 
             InsertView(request, response, dbClient);
         }
+        else if(httpRequestPtr->getHeader("type") == "update-content-rate")
+        {
+            std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
+            Json::Value &request = *reqJsonPtr.get();
+
+            UpdateContentRate(request, response, dbClient);
+        }
         else
         {
             std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();

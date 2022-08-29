@@ -43,3 +43,4 @@
 #include "root/Insert/Page.h"
 #include "root/Update/Page.h"
 #include "root/Insert/View.h"
+#include "root/Update/ContentRate.h"
