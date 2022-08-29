@@ -48,6 +48,7 @@ add_executable(ePathshala
     "src/HandleRequests/root/Insert/Question.cpp"
     "src/HandleRequests/root/GetQuestions.cpp"
     "src/HandleRequests/root/GetQuestionDetails.cpp"
+    "src/HandleRequests/root/GetPageContent.cpp"
 )
 
 find_package(Drogon REQUIRED)

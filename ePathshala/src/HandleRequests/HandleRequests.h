@@ -39,3 +39,4 @@
 #include "root/Insert/Question.h"
 #include "root/GetQuestions.h"
 #include "root/GetQuestionDetails.h"
+#include "root/GetPageContent.h"

@@ -66,6 +66,13 @@ int main()
 
             Login(request, response, dbClient);
         }
+        else if(httpRequestPtr->getHeader("type") == "get-page-content")
+        {
+            std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
+            Json::Value &request = *reqJsonPtr.get();
+
+            GetPageContent(request, response, dbClient, httpAppFramework);
+        }
         else
         {
             std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
