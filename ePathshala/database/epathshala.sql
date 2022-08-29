@@ -976,6 +976,38 @@ $$;
 ALTER FUNCTION public.get_new_course_id() OWNER TO epathshala;
 
 --
+-- Name: get_new_question_id(); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_new_question_id() RETURNS bigint
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	MAX_QUESTION_ID BIGINT;
+	NEW_QUESTION_ID BIGINT;
+BEGIN
+	SELECT MAX(QUESTION_ID) INTO MAX_QUESTION_ID
+	FROM FORUM_QUESTIONS;
+	IF MAX_QUESTION_ID IS NULL THEN
+		RETURN 1;
+	ELSE
+		FOR I IN 1..MAX_QUESTION_ID LOOP
+			SELECT QUESTION_ID INTO NEW_QUESTION_ID
+			FROM FORUM_QUESTIONS
+			WHERE QUESTION_ID = I;
+			IF NEW_QUESTION_ID IS NULL THEN
+				RETURN I;
+			END IF;
+		END LOOP;
+		RETURN MAX_QUESTION_ID + 1;
+	END IF;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_new_question_id() OWNER TO epathshala;
+
+--
 -- Name: get_new_user_id(); Type: FUNCTION; Schema: public; Owner: epathshala
 --
 
@@ -1006,6 +1038,58 @@ $$;
 
 
 ALTER FUNCTION public.get_new_user_id() OWNER TO epathshala;
+
+--
+-- Name: get_question_details(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_question_details(param_question_id bigint) RETURNS TABLE(question_id bigint, title character varying, asker_id bigint, asker_name character varying, date_of_ask date, time_of_ask time with time zone, rate numeric)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT
+		FORUM_QUESTIONS.QUESTION_ID,
+		FORUM_QUESTIONS.TITLE,
+		FORUM_QUESTIONS.ASKER_ID,
+		USERS.FULL_NAME,
+		FORUM_QUESTIONS.DATE_OF_ASK,
+		FORUM_QUESTIONS.TIME_OF_ASK::TIME(0) WITH TIME ZONE,
+		FORUM_QUESTIONS.RATE::NUMERIC(3, 2)
+	FROM FORUM_QUESTIONS
+	JOIN USERS
+	ON (FORUM_QUESTIONS.ASKER_ID = USERS.USER_ID)
+	WHERE FORUM_QUESTIONS.QUESTION_ID = PARAM_QUESTION_ID;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_question_details(param_question_id bigint) OWNER TO epathshala;
+
+--
+-- Name: get_questions(); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_questions() RETURNS TABLE(question_id bigint, title character varying, asker_id bigint, asker_name character varying, date_of_ask date, time_of_ask time with time zone, rate numeric)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT
+		FORUM_QUESTIONS.QUESTION_ID,
+		FORUM_QUESTIONS.TITLE,
+		FORUM_QUESTIONS.ASKER_ID,
+		USERS.FULL_NAME,
+		FORUM_QUESTIONS.DATE_OF_ASK,
+		FORUM_QUESTIONS.TIME_OF_ASK::TIME(0) WITH TIME ZONE,
+		FORUM_QUESTIONS.RATE::NUMERIC(3, 2)
+	FROM FORUM_QUESTIONS
+	JOIN USERS
+	ON (FORUM_QUESTIONS.ASKER_ID = USERS.USER_ID)
+	ORDER BY FORUM_QUESTIONS.DATE_OF_ASK DESC;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_questions() OWNER TO epathshala;
 
 --
 -- Name: get_specialities(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
@@ -1329,6 +1413,33 @@ $$;
 
 
 ALTER PROCEDURE public.insert_interest(IN param_student_id bigint, IN param_interest character varying) OWNER TO epathshala;
+
+--
+-- Name: insert_question(character varying, character varying[], bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.insert_question(param_title character varying, param_tags character varying[], param_asker_id bigint) RETURNS bigint
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	NEW_QUESTION_ID BIGINT;
+BEGIN
+	NEW_QUESTION_ID := GET_NEW_QUESTION_ID();
+	INSERT INTO FORUM_QUESTIONS (QUESTION_ID, ASKER_ID, TITLE)
+	VALUES (NEW_QUESTION_ID, PARAM_ASKER_ID, PARAM_TITLE);
+	FOR I IN 1..CARDINALITY(PARAM_TAGS) LOOP
+		INSERT INTO FORUM_QUESTIONS_TAGS (QUESTION_ID, TAG)
+		VALUES(NEW_QUESTION_ID, PARAM_TAGS[I]);
+	END LOOP;
+	RETURN NEW_QUESTION_ID;
+EXCEPTION
+	WHEN unique_violation THEN
+		RETURN -1; --DUPLICATE QUESTION TOPIC BY SAME USER
+END;
+$$;
+
+
+ALTER FUNCTION public.insert_question(param_title character varying, param_tags character varying[], param_asker_id bigint) OWNER TO epathshala;
 
 --
 -- Name: insert_speciality(bigint, character varying); Type: PROCEDURE; Schema: public; Owner: epathshala
@@ -1849,8 +1960,8 @@ ALTER TABLE public.course_remain_contents OWNER TO epathshala;
 --
 
 CREATE TABLE public.course_tags (
-    tag_id bigint NOT NULL,
-    course_id bigint NOT NULL
+    course_id bigint NOT NULL,
+    tag character varying NOT NULL
 );
 
 
@@ -1890,6 +2001,36 @@ CREATE TABLE public.enrolled_courses (
 
 
 ALTER TABLE public.enrolled_courses OWNER TO epathshala;
+
+--
+-- Name: forum_questions; Type: TABLE; Schema: public; Owner: epathshala
+--
+
+CREATE TABLE public.forum_questions (
+    question_id bigint NOT NULL,
+    asker_id bigint,
+    title character varying,
+    date_of_ask date DEFAULT CURRENT_DATE,
+    rate numeric DEFAULT 0,
+    time_of_ask time without time zone DEFAULT CURRENT_TIME,
+    CONSTRAINT forum_questions_question_id_check CHECK ((question_id > 0)),
+    CONSTRAINT forum_questions_rate_check CHECK ((((0)::numeric <= rate) AND (rate <= (5)::numeric)))
+);
+
+
+ALTER TABLE public.forum_questions OWNER TO epathshala;
+
+--
+-- Name: forum_questions_tags; Type: TABLE; Schema: public; Owner: epathshala
+--
+
+CREATE TABLE public.forum_questions_tags (
+    question_id bigint NOT NULL,
+    tag character varying NOT NULL
+);
+
+
+ALTER TABLE public.forum_questions_tags OWNER TO epathshala;
 
 --
 -- Name: query_count; Type: TABLE; Schema: public; Owner: epathshala
@@ -1943,41 +2084,6 @@ CREATE TABLE public.students (
 ALTER TABLE public.students OWNER TO epathshala;
 
 --
--- Name: tags; Type: TABLE; Schema: public; Owner: epathshala
---
-
-CREATE TABLE public.tags (
-    tag_id bigint NOT NULL,
-    tag_name character(10) NOT NULL,
-    CONSTRAINT tags_tag_id_check CHECK ((tag_id > 0)),
-    CONSTRAINT tags_tag_name_check CHECK ((length(tag_name) > 0))
-);
-
-
-ALTER TABLE public.tags OWNER TO epathshala;
-
---
--- Name: tags_tag_id_seq; Type: SEQUENCE; Schema: public; Owner: epathshala
---
-
-CREATE SEQUENCE public.tags_tag_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.tags_tag_id_seq OWNER TO epathshala;
-
---
--- Name: tags_tag_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: epathshala
---
-
-ALTER SEQUENCE public.tags_tag_id_seq OWNED BY public.tags.tag_id;
-
-
---
 -- Name: teacher_specialities; Type: TABLE; Schema: public; Owner: epathshala
 --
 
@@ -2025,13 +2131,6 @@ CREATE TABLE public.users (
 
 
 ALTER TABLE public.users OWNER TO epathshala;
-
---
--- Name: tags tag_id; Type: DEFAULT; Schema: public; Owner: epathshala
---
-
-ALTER TABLE ONLY public.tags ALTER COLUMN tag_id SET DEFAULT nextval('public.tags_tag_id_seq'::regclass);
-
 
 --
 -- Data for Name: banks; Type: TABLE DATA; Schema: public; Owner: epathshala
@@ -5140,20 +5239,20 @@ COPY public.course_remain_contents (user_id, course_id, complete_count, remain_c
 -- Data for Name: course_tags; Type: TABLE DATA; Schema: public; Owner: epathshala
 --
 
-COPY public.course_tags (tag_id, course_id) FROM stdin;
-1	1
-1	2
-1	3
-1	4
-1	5
-1	6
-2	3
-2	4
-3	7
-3	9
-4	9
-5	8
-5	10
+COPY public.course_tags (course_id, tag) FROM stdin;
+1	math
+2	math
+3	math
+4	math
+5	math
+6	math
+3	geometry
+4	geometry
+7	computer
+9	computer
+9	internet
+8	economics
+10	economics
 \.
 
 
@@ -5499,6 +5598,28 @@ COPY public.enrolled_courses (user_id, course_id, date_of_join) FROM stdin;
 
 
 --
+-- Data for Name: forum_questions; Type: TABLE DATA; Schema: public; Owner: epathshala
+--
+
+COPY public.forum_questions (question_id, asker_id, title, date_of_ask, rate, time_of_ask) FROM stdin;
+1	61	question 1	2022-08-29	0	05:20:32.154914
+2	61	question 2	2022-08-29	0	05:20:57.433963
+\.
+
+
+--
+-- Data for Name: forum_questions_tags; Type: TABLE DATA; Schema: public; Owner: epathshala
+--
+
+COPY public.forum_questions_tags (question_id, tag) FROM stdin;
+1	tag 1
+1	tag 2
+2	tag 1
+2	tag 3
+\.
+
+
+--
 -- Data for Name: query_count; Type: TABLE DATA; Schema: public; Owner: epathshala
 --
 
@@ -5730,19 +5851,6 @@ COPY public.students (user_id, date_of_join, rank_point) FROM stdin;
 
 
 --
--- Data for Name: tags; Type: TABLE DATA; Schema: public; Owner: epathshala
---
-
-COPY public.tags (tag_id, tag_name) FROM stdin;
-1	math      
-2	geometry  
-3	computer  
-4	internet  
-5	economics 
-\.
-
-
---
 -- Data for Name: teacher_specialities; Type: TABLE DATA; Schema: public; Owner: epathshala
 --
 
@@ -5868,13 +5976,6 @@ SELECT pg_catalog.setval('public.contents_content_id_seq', 109, true);
 
 
 --
--- Name: tags_tag_id_seq; Type: SEQUENCE SET; Schema: public; Owner: epathshala
---
-
-SELECT pg_catalog.setval('public.tags_tag_id_seq', 1, false);
-
-
---
 -- Name: banks bank_pkey; Type: CONSTRAINT; Schema: public; Owner: epathshala
 --
 
@@ -5919,7 +6020,7 @@ ALTER TABLE ONLY public.course_remain_contents
 --
 
 ALTER TABLE ONLY public.course_tags
-    ADD CONSTRAINT course_tags_pkey PRIMARY KEY (tag_id, course_id);
+    ADD CONSTRAINT course_tags_pkey PRIMARY KEY (course_id, tag);
 
 
 --
@@ -5936,6 +6037,30 @@ ALTER TABLE ONLY public.courses
 
 ALTER TABLE ONLY public.enrolled_courses
     ADD CONSTRAINT enrolled_courses_pkey PRIMARY KEY (user_id, course_id);
+
+
+--
+-- Name: forum_questions forum_questions_pkey; Type: CONSTRAINT; Schema: public; Owner: epathshala
+--
+
+ALTER TABLE ONLY public.forum_questions
+    ADD CONSTRAINT forum_questions_pkey PRIMARY KEY (question_id);
+
+
+--
+-- Name: forum_questions_tags forum_questions_tags_pkey; Type: CONSTRAINT; Schema: public; Owner: epathshala
+--
+
+ALTER TABLE ONLY public.forum_questions_tags
+    ADD CONSTRAINT forum_questions_tags_pkey PRIMARY KEY (question_id, tag);
+
+
+--
+-- Name: forum_questions forum_questions_title_asker_id_key; Type: CONSTRAINT; Schema: public; Owner: epathshala
+--
+
+ALTER TABLE ONLY public.forum_questions
+    ADD CONSTRAINT forum_questions_title_asker_id_key UNIQUE (title, asker_id);
 
 
 --
@@ -5960,22 +6085,6 @@ ALTER TABLE ONLY public.student_interests
 
 ALTER TABLE ONLY public.students
     ADD CONSTRAINT students_pkey PRIMARY KEY (user_id);
-
-
---
--- Name: tags tags_pkey; Type: CONSTRAINT; Schema: public; Owner: epathshala
---
-
-ALTER TABLE ONLY public.tags
-    ADD CONSTRAINT tags_pkey PRIMARY KEY (tag_id);
-
-
---
--- Name: tags tags_tag_name_key; Type: CONSTRAINT; Schema: public; Owner: epathshala
---
-
-ALTER TABLE ONLY public.tags
-    ADD CONSTRAINT tags_tag_name_key UNIQUE (tag_name);
 
 
 --
@@ -6131,14 +6240,6 @@ ALTER TABLE ONLY public.course_tags
 
 
 --
--- Name: course_tags course_tags_tag_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: epathshala
---
-
-ALTER TABLE ONLY public.course_tags
-    ADD CONSTRAINT course_tags_tag_id_fkey FOREIGN KEY (tag_id) REFERENCES public.tags(tag_id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
 -- Name: courses courses_creator_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: epathshala
 --
 
@@ -6160,6 +6261,22 @@ ALTER TABLE ONLY public.enrolled_courses
 
 ALTER TABLE ONLY public.enrolled_courses
     ADD CONSTRAINT enrolled_courses_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.students(user_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: forum_questions forum_questions_asker_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: epathshala
+--
+
+ALTER TABLE ONLY public.forum_questions
+    ADD CONSTRAINT forum_questions_asker_id_fkey FOREIGN KEY (asker_id) REFERENCES public.users(user_id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: forum_questions_tags forum_questions_tags_question_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: epathshala
+--
+
+ALTER TABLE ONLY public.forum_questions_tags
+    ADD CONSTRAINT forum_questions_tags_question_id_fkey FOREIGN KEY (question_id) REFERENCES public.forum_questions(question_id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --

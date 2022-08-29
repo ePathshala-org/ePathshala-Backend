@@ -40,3 +40,5 @@
 #include "root/GetQuestions.h"
 #include "root/GetQuestionDetails.h"
 #include "root/GetPageContent.h"
+#include "root/Insert/Page.h"
+#include "root/Update/Page.h"
