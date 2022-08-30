@@ -137,6 +137,13 @@ int main()
 
             SearchPages(request, response, dbClient);
         }
+        else if(httpRequestPtr->getHeader("type") == "collect-credit")
+        {
+            std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
+            Json::Value &request = *reqJsonPtr.get();
+
+            CollectCredit(request, response, dbClient);
+        }
         else
         {
             std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();

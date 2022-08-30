@@ -49,3 +49,4 @@
 #include "root/SearchCourses.h"
 #include "root/SearchVideos.h"
 #include "root/SearchPages.h"
+#include "root/CollectCredit.h"

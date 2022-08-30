@@ -23,6 +23,10 @@ int main()
         {
             Subtract(request, response, dbClient);
         }
+        else if(request["type"].asString() == "add")
+        {
+            Add(request, response, dbClient);
+        }
 
         drogon::HttpResponsePtr httpResponsePtr = drogon::HttpResponse::newHttpJsonResponse(response);
 

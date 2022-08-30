@@ -41,6 +41,23 @@ $$;
 ALTER FUNCTION public.check_student_enrolled(param_user_id bigint, param_course_id bigint) OWNER TO epathshala;
 
 --
+-- Name: collect_teacher_credit(bigint); Type: PROCEDURE; Schema: public; Owner: epathshala
+--
+
+CREATE PROCEDURE public.collect_teacher_credit(IN param_user_id bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	UPDATE TEACHERS
+	SET CREDIT = 0
+	WHERE USER_ID = PARAM_USER_ID;
+END;
+$$;
+
+
+ALTER PROCEDURE public.collect_teacher_credit(IN param_user_id bigint) OWNER TO epathshala;
+
+--
 -- Name: comment_rate_trigger(); Type: FUNCTION; Schema: public; Owner: epathshala
 --
 
@@ -1304,7 +1321,7 @@ ALTER FUNCTION public.get_student_details(param_user_id bigint) OWNER TO epathsh
 -- Name: get_teacher_details(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
 --
 
-CREATE FUNCTION public.get_teacher_details(param_teacher_id bigint) RETURNS TABLE(user_id bigint, full_name character varying, email character varying, bio character varying, date_of_birth date, date_of_join date, rate numeric)
+CREATE FUNCTION public.get_teacher_details(param_teacher_id bigint) RETURNS TABLE(user_id bigint, full_name character varying, email character varying, bio character varying, date_of_birth date, date_of_join date, rate numeric, credit integer)
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -1315,7 +1332,8 @@ BEGIN
 		TRIM(USERS.BIO)::VARCHAR,
 		USERS.DATE_OF_BIRTH,
 		TEACHERS.DATE_OF_JOIN,
-		TEACHERS.RATE::NUMERIC(3, 2)
+		TEACHERS.RATE::NUMERIC(3, 2),
+		TEACHERS.CREDIT
 	FROM USERS
 	JOIN TEACHERS
 	ON (USERS.USER_ID = TEACHERS.USER_ID)
@@ -5946,7 +5964,7 @@ COPY public.teacher_specialities (teacher_id, speciality) FROM stdin;
 
 COPY public.teachers (user_id, date_of_join, credit, rate) FROM stdin;
 61	2022-08-26	0	0
-62	2022-08-30	3200	4.0000000000000000
+62	2022-08-30	0	4.0000000000000000
 60	2021-05-15	0	0
 59	2021-03-13	2400	0
 58	2020-11-13	0	0

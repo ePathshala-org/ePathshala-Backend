@@ -7,6 +7,7 @@ file(COPY ${CMAKE_SOURCE_DIR}/sql DESTINATION ${CMAKE_BINARY_DIR})
 add_executable(a_bank
     "src/main.cpp"
     "src/Subtract.cpp"
+    "src/Add.cpp"
 )
 
 find_package(Drogon REQUIRED)
