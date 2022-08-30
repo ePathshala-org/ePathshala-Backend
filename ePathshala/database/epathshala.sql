@@ -75,6 +75,23 @@ $$;
 ALTER FUNCTION public.comment_rate_trigger() OWNER TO epathshala;
 
 --
+-- Name: complete_view(bigint, bigint); Type: PROCEDURE; Schema: public; Owner: epathshala
+--
+
+CREATE PROCEDURE public.complete_view(IN param_user_id bigint, IN param_content_id bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	UPDATE CONTENT_VIEWERS
+	SET COMPLETED = TRUE
+	WHERE USER_ID = PARAM_USER_ID AND CONTENT_ID = PARAM_CONTENT_ID;
+END;
+$$;
+
+
+ALTER PROCEDURE public.complete_view(IN param_user_id bigint, IN param_content_id bigint) OWNER TO epathshala;
+
+--
 -- Name: conetent_view_complete_trigger(); Type: FUNCTION; Schema: public; Owner: epathshala
 --
 
@@ -1550,6 +1567,43 @@ $$;
 ALTER PROCEDURE public.insert_teacher(IN param_user_id bigint) OWNER TO epathshala;
 
 --
+-- Name: insert_user(character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.insert_user(param_full_name character varying, param_email character varying, param_password character varying, param_date_of_birth character varying) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	NEW_USER_ID BIGINT;
+BEGIN
+	SELECT USERS.USER_ID INTO NEW_USER_ID
+	FROM USERS
+	JOIN STUDENTS
+	ON(USERS.USER_ID = STUDENTS.USER_ID)
+	WHERE EMAIL = PARAM_EMAIL;
+	IF NEW_USER_ID IS NOT NULL THEN
+		RETURN 1; --STUDENT ALREADY PRESENT
+	END IF;
+	SELECT USERS.USER_ID INTO NEW_USER_ID
+	FROM USERS
+	JOIN TEACHERS
+	ON(USERS.USER_ID = TEACHERS.USER_ID)
+	WHERE EMAIL = PARAM_EMAIL;
+	IF NEW_USER_ID IS NOT NULL THEN
+		RETURN 2; --TEACHER ALREADY PRESENT
+	END IF;
+	NEW_USER_ID = GET_NEW_USER_ID();
+	INSERT INTO USERS
+	(USER_ID, FULL_NAME, EMAIL, SECURITY_KEY, DATE_OF_BIRTH)
+	VALUES(NEW_USER_ID, PARAM_FULL_NAME, PARAM_EMAIL, PARAM_PASSWORD, TO_DATE(PARAM_DATE_OF_BIRTH, 'YYYY-MM-DD'));
+	RETURN 0; --SUCCESS
+END;
+$$;
+
+
+ALTER FUNCTION public.insert_user(param_full_name character varying, param_email character varying, param_password character varying, param_date_of_birth character varying) OWNER TO epathshala;
+
+--
 -- Name: insert_user(character varying, character varying, character varying, character varying, boolean); Type: FUNCTION; Schema: public; Owner: epathshala
 --
 
@@ -1558,51 +1612,35 @@ CREATE FUNCTION public.insert_user(param_full_name character varying, param_emai
     AS $$
 DECLARE
 	NEW_USER_ID BIGINT;
-	FOUND_USER BIGINT;
 BEGIN
-	NEW_USER_ID := GET_NEW_USER_ID();
-	IF PARAM_STUDENT THEN
-		SELECT USERS.USER_ID INTO FOUND_USER
-		FROM USERS
-		JOIN STUDENTS
-		ON(USERS.USER_ID = STUDENTS.USER_ID)
-		WHERE EMAIL = PARAM_EMAIL;
-		IF FOUND_USER IS NULL THEN
-			SELECT USER_ID INTO FOUND_USER
-			FROM USERS
-			WHERE EMAIL = PARAM_EMAIL;
-			IF FOUND_USER IS NULL THEN
-				INSERT INTO USERS (USER_ID, FULL_NAME, EMAIL, SECURITY_KEY, DATE_OF_BIRTH, USER_TYPE)
-				VALUES (NEW_USER_ID, PARAM_FULL_NAME, PARAM_EMAIL, PARAM_PASSWORD, TO_DATE(PARAM_DATE_OF_BIRTH, 'YYYY-MM-DD'), 'STUDENT');
-			ELSE
-				INSERT INTO STUDENTS (USER_ID)
-				VALUES (FOUND_USER);
-			END IF;
-		ELSE
-			RETURN 1; --USER PRESENT
-		END IF;
-	ELSE
-		SELECT USERS.USER_ID INTO FOUND_USER
-		FROM USERS
-		JOIN TEACHERS
-		ON(USERS.USER_ID = TEACHERS.USER_ID)
-		WHERE EMAIL = PARAM_EMAIL;
-		IF FOUND_USER IS NULL THEN
-			SELECT USER_ID INTO FOUND_USER
-			FROM USERS
-			WHERE EMAIL = PARAM_EMAIL;
-			IF FOUND_USER IS NULL THEN
-				INSERT INTO USERS (USER_ID, FULL_NAME, EMAIL, SECURITY_KEY, DATE_OF_BIRTH, USER_TYPE)
-				VALUES (NEW_USER_ID, PARAM_FULL_NAME, PARAM_EMAIL, PARAM_PASSWORD, TO_DATE(PARAM_DATE_OF_BIRTH, 'YYYY-MM-DD'), 'TEACHERS');
-			ELSE
-				INSERT INTO TEACHERS (USER_ID)
-				VALUES (FOUND_USER);
-			END IF;
-		ELSE
-			RETURN 1; --USER PRESENT
-		END IF;
+	SELECT USERS.USER_ID INTO NEW_USER_ID
+	FROM USERS
+	JOIN STUDENTS
+	ON(USERS.USER_ID = STUDENTS.USER_ID)
+	WHERE EMAIL = PARAM_EMAIL;
+	IF NEW_USER_ID IS NOT NULL THEN
+		RETURN -1; --STUDENT ALREADY PRESENT
 	END IF;
-	RETURN 0; --SUCCESS
+	SELECT USERS.USER_ID INTO NEW_USER_ID
+	FROM USERS
+	JOIN TEACHERS
+	ON(USERS.USER_ID = TEACHERS.USER_ID)
+	WHERE EMAIL = PARAM_EMAIL;
+	IF NEW_USER_ID IS NOT NULL THEN
+		RETURN -2; --TEACHER ALREADY PRESENT
+	END IF;
+	NEW_USER_ID = GET_NEW_USER_ID();
+	INSERT INTO USERS
+	(USER_ID, FULL_NAME, EMAIL, SECURITY_KEY, DATE_OF_BIRTH)
+	VALUES(NEW_USER_ID, PARAM_FULL_NAME, PARAM_EMAIL, PARAM_PASSWORD, TO_DATE(PARAM_DATE_OF_BIRTH, 'YYYY-MM-DD'));
+	IF PARAM_STUDENT THEN
+		INSERT INTO STUDENTS (USER_ID)
+		VALUES (NEW_USER_ID);
+	ELSE
+		INSERT INTO TEACHERS (USER_ID)
+		VALUES (NEW_USER_ID);
+	END IF;
+	RETURN NEW_USER_ID; --SUCCESS
 END;
 $$;
 
@@ -1610,29 +1648,59 @@ $$;
 ALTER FUNCTION public.insert_user(param_full_name character varying, param_email character varying, param_password character varying, param_date_of_birth character varying, param_student boolean) OWNER TO epathshala;
 
 --
--- Name: insert_user_trigger(); Type: FUNCTION; Schema: public; Owner: epathshala
+-- Name: insert_user(character varying, character varying, character varying, integer, integer, integer); Type: FUNCTION; Schema: public; Owner: epathshala
 --
 
-CREATE FUNCTION public.insert_user_trigger() RETURNS trigger
+CREATE FUNCTION public.insert_user(param_full_name character varying, param_email character varying, param_password character varying, param_day integer, param_month integer, param_year integer) RETURNS integer
     LANGUAGE plpgsql
     AS $$
 DECLARE
+	NEW_USER_ID BIGINT;
 BEGIN
-	IF NEW.USER_TYPE = 'STUDENT' THEN
-		INSERT INTO STUDENTS
-		(USER_ID)
-		VALUES (NEW.USER_ID);
-	ELSE
-		INSERT INTO TEACHERS
-		(USER_ID)
-		VALUES (NEW.USER_ID);
+	IF LENGTH(PARAM_FULL_NAME) = 0 THEN
+		RETURN 1; --EMPTY NAME ERROR
 	END IF;
-	RETURN NEW;
+	IF LENGTH(PARAM_EMAIL) = 0 THEN
+		RETURN 2; --EMPTY EMAIL ERROR
+	END IF;
+	IF PARAM_EMAIL NOT LIKE '%_@_%.___' THEN
+		RETURN 3; --INVALID EMAIL ERROR
+	END IF;
+	IF LENGTH(PARAM_PASSWORD) < 8 THEN
+		RETURN 4; --PASSWORD TOO SHORT ERROR
+	END IF;
+	IF LENGTH(PARAM_PASSWORD) > 32 THEN
+		RETURN 5; --PASSWORD TOO LONG ERROR
+	END IF;
+	IF NOT IS_VALID_DATE(PARAM_DAY, PARAM_MONTH, PARAM_YEAR) THEN
+		RETURN 6; --INVALID DATE ERROR
+	END IF;
+	SELECT USERS.USER_ID INTO NEW_USER_ID
+	FROM USERS
+	JOIN STUDENTS
+	ON(USERS.USER_ID = STUDENTS.USER_ID)
+	WHERE EMAIL = PARAM_EMAIL;
+	IF NEW_USER_ID IS NOT NULL THEN
+		RETURN 7; --STUDENT ALREADY PRESENT
+	END IF;
+	SELECT USERS.USER_ID INTO NEW_USER_ID
+	FROM USERS
+	JOIN TEACHERS
+	ON(USERS.USER_ID = TEACHERS.USER_ID)
+	WHERE EMAIL = PARAM_EMAIL;
+	IF NEW_USER_ID IS NOT NULL THEN
+		RETURN 8; --TEACHER ALREADY PRESENT
+	END IF;
+	NEW_USER_ID = GET_NEW_USER_ID();
+	INSERT INTO USERS
+	(USER_ID, FULL_NAME, EMAIL, SECURITY_KEY)
+	VALUES(NEW_USER_ID, PARAM_FULL_NAME, PARAM_EMAIL, PARAM_PASSWORD);
+	RETURN 0; --SUCCESS
 END;
 $$;
 
 
-ALTER FUNCTION public.insert_user_trigger() OWNER TO epathshala;
+ALTER FUNCTION public.insert_user(param_full_name character varying, param_email character varying, param_password character varying, param_day integer, param_month integer, param_year integer) OWNER TO epathshala;
 
 --
 -- Name: insert_view(bigint, bigint); Type: FUNCTION; Schema: public; Owner: epathshala
@@ -2341,6 +2409,7 @@ COPY public.comments (comment_id, content_id, commenter_id, description, "time",
 5	11	1	Arekta comment (edited)                                                                             	22:46:22.296031	2022-08-29	0
 6	5	1	Make more videos like this                                                                          	23:18:39.012789	2022-08-29	0
 1	5	5	Epic Video                                                                                          	23:43:54.742951	2022-08-09	3.0000000000000000
+2	105	62	Shundor hoise 😌                                                                                     	22:13:27.018853	2022-08-30	0
 \.
 
 
@@ -2351,6 +2420,10 @@ COPY public.comments (comment_id, content_id, commenter_id, description, "time",
 COPY public.content_viewers (view_id, content_id, user_id, rate, completed) FROM stdin;
 2431	19	14	3	f
 2433	2	2	3	f
+2440	5	14	0	f
+2445	9	62	0	f
+2447	106	62	0	t
+2441	105	62	0	t
 2313	24	47	0	f
 1	97	1	0	f
 78	5	1	0	f
@@ -4791,9 +4864,9 @@ COPY public.contents (content_id, date_of_creation, content_type, title, descrip
 108	2021-05-15	VIDEO     	Scarcity	Description of video 'Scarcity'                                                                     	10	0	4
 109	2021-05-15	VIDEO     	Normative and positive statements	Description of video 'Normative and positive statements'                                            	10	0	4
 107	2021-05-15	VIDEO     	Introoduction to economics	Description of video 'Introoduction to economics'                                                   	10	0	4
-105	2021-03-13	VIDEO     	Binary and data	Description of video 'Binary and data'                                                              	9	0	7
 104	2021-03-13	PAGE      	How do computers represent data?	Description of page 'How do computers represent data?'                                              	9	0	7
-106	2021-03-13	PAGE      	Bits (binary digits)	Description of page 'Bits (binary digits)'                                                          	9	0	7
+106	2021-03-13	PAGE      	Bits (binary digits)	Description of page 'Bits (binary digits)'                                                          	9	0	8
+105	2021-03-13	VIDEO     	Binary and data	Description of video 'Binary and data'                                                              	9	0	8
 96	2020-05-08	VIDEO     	Reading pictographs	Description of video 'Reading pictographs'                                                          	6	0	14
 95	2020-05-08	VIDEO     	Identifying individuals, variables and catagorical variables in a data set	Description of video 'Identifying individuals, variables and catagorical variables in a data set'   	6	0	14
 98	2020-05-08	VIDEO     	Creating a bar graph	Description of video 'Creating a bar graph'                                                         	6	0	14
@@ -4822,7 +4895,6 @@ COPY public.contents (content_id, date_of_creation, content_type, title, descrip
 66	2020-10-15	PAGE      	Rotations intro	Description of page 'Rotations intro'                                                               	3	0	24
 73	2020-10-15	PAGE      	Translating shapes	Description of page 'Translating shapes'                                                            	3	0	24
 7	2019-10-19	VIDEO     	What is a variable?	Description of video 'What is a variable?'                                                          	1	0	26
-5	2019-10-19	VIDEO     	Intro to the coordinate plane	Description of video 'Intro to the coordinate plane'                                                	1	0	26
 57	2019-10-01	QUIZ      	Polynomial special products: perfect square	Description of quiz 'Polynomial special products: perfect square'                                   	2	0	25
 40	2019-10-01	QUIZ      	Add and subtract polynomials	Description of quiz 'Add and subtract polynomials'                                                  	2	0	25
 56	2019-10-01	QUIZ      	Polynomial special products: difference of squares	Description of quiz 'Polynomial special products: difference of squares'                            	2	0	25
@@ -4837,7 +4909,7 @@ COPY public.contents (content_id, date_of_creation, content_type, title, descrip
 25	2019-10-19	QUIZ      	Equivalent expressions	Description of quiz 'Equivalent expressions'                                                        	1	0	26
 22	2019-10-19	QUIZ      	Combining like terms with negative coefficients and distribution	Description of quiz 'Combining like terms with negative coefficients and distribution'              	1	0	26
 31	2019-10-01	VIDEO     	Finding average rate of change of polynomials	Description of video 'Finding average rate of change of polynomials'                                	2	0	25
-9	2019-10-19	VIDEO     	Creativity break: Why is creativity important in STEM jobs?	Description of video 'Creativity break: Why is creativity important in STEM jobs?'                  	1	0	26
+5	2019-10-19	VIDEO     	Intro to the coordinate plane	Description of video 'Intro to the coordinate plane'                                                	1	0	27
 29	2019-10-01	VIDEO     	Polinomials intro	Description of video 'Polinomials intro'                                                            	2	0	25
 30	2019-10-01	VIDEO     	The parts of polynomial expressions	Description of video 'The parts of polynomial expressions'                                          	2	0	25
 49	2019-10-01	VIDEO     	Multiply binomials by polynomials: area model	Description of video 'Multiply binomials by polynomials: area model'                                	2	0	25
@@ -4856,6 +4928,7 @@ COPY public.contents (content_id, date_of_creation, content_type, title, descrip
 65	2020-10-15	PAGE      	Translations intro	Description of page 'Translations intro'                                                            	3	0	24
 63	2020-10-15	VIDEO     	Rigid transformations intro	Description of video 'Rigid transformations intro'                                                  	3	0	24
 75	2020-10-15	PAGE      	Properties of translations	Description of page 'Properties of translations'                                                    	3	0	24
+9	2019-10-19	VIDEO     	Creativity break: Why is creativity important in STEM jobs?	Description of video 'Creativity break: Why is creativity important in STEM jobs?'                  	1	0	27
 59	2020-10-15	VIDEO     	Euclid as father of geometry	Description of video 'Euclid as father of geometry'                                                 	3	0	24
 71	2020-10-15	PAGE      	Determining translations	Description of page 'Determining translations'                                                      	3	0	24
 62	2020-10-15	QUIZ      	Geometric definitions	Description of quiz 'Geometric definitions'                                                         	3	0	24
@@ -5220,6 +5293,7 @@ COPY public.course_remain_contents (user_id, course_id, complete_count, remain_c
 50	8	0	3
 50	9	0	3
 14	9	0	3
+62	9	2	1
 \.
 
 
@@ -5251,7 +5325,7 @@ COPY public.course_tags (course_id, tag) FROM stdin;
 COPY public.courses (course_id, title, description, date_of_creation, price, creator_id, rate, enroll_count) FROM stdin;
 11	Course	Course Description                                                                                  	2022-08-25	0	51	0	0
 10	Macroeconomics	Learn macroeconomics                                                                                	2021-05-15	500	60	0	8
-9	Computers and Internet	Learn how the amazing world of internet works                                                       	2021-03-13	1200	59	0	17
+9	Computers and Internet	Learn how the amazing world of internet works                                                       	2021-03-13	1200	59	0	18
 8	Microeconomics	Learn microeconomics                                                                                	2020-11-13	500	58	0	21
 7	Computer Programming	Learn the art of programming                                                                        	2020-10-16	1000	57	0	25
 6	Statistics and Probablity	Learn statistics and probablity                                                                     	2020-05-08	700	56	0	29
@@ -5583,6 +5657,7 @@ COPY public.enrolled_courses (user_id, course_id, date_of_join) FROM stdin;
 50	8	2022-08-25
 50	9	2022-08-25
 14	9	2022-08-30
+62	9	2022-08-30
 \.
 
 
@@ -5666,7 +5741,6 @@ COPY public.student_interests (student_id, interest) FROM stdin;
 13	literature
 13	statistics
 13	math
-14	literature
 14	statistics
 14	math
 15	statistics
@@ -5777,6 +5851,8 @@ COPY public.student_interests (student_id, interest) FROM stdin;
 1	math
 6	literature
 6	math
+14	literature
+62	math
 \.
 
 
@@ -5836,6 +5912,7 @@ COPY public.students (user_id, date_of_join, rank_point) FROM stdin;
 49	2020-07-11	0
 50	2021-07-20	0
 61	2022-08-26	0
+62	2022-08-30	0
 \.
 
 
@@ -5869,7 +5946,7 @@ COPY public.teacher_specialities (teacher_id, speciality) FROM stdin;
 COPY public.teachers (user_id, date_of_join, credit, rate) FROM stdin;
 61	2022-08-26	0	0
 60	2021-05-15	0	0
-59	2021-03-13	1200	0
+59	2021-03-13	2400	0
 58	2020-11-13	0	0
 57	2020-10-16	0	0
 56	2020-05-08	0	0
@@ -5896,7 +5973,6 @@ COPY public.users (user_id, full_name, security_key, date_of_birth, bio, email) 
 11	Lila Crawford	12345678                        	1983-10-20	                                                                                                    	lila6053@gmail.com
 12	Devon Steger	12345678                        	1991-06-09	                                                                                                    	devon1321@gmail.com
 13	Al Lynch	12345678                        	1989-07-24	                                                                                                    	al8986@gmail.com
-14	Joi Bellefeuille	12345678                        	1992-11-17	                                                                                                    	joi6193@gmail.com
 15	Kimberly Toler	12345678                        	1981-04-06	                                                                                                    	kimberly1991@gmail.com
 16	Tonya Harris	12345678                        	1998-03-20	                                                                                                    	tonya6665@gmail.com
 17	Joseph Sharp	12345678                        	1993-12-28	                                                                                                    	joseph7068@gmail.com
@@ -5947,6 +6023,8 @@ COPY public.users (user_id, full_name, security_key, date_of_birth, bio, email) 
 51	Martha Marbley	undefined                       	1986-05-26	                                                                                                    	martha4381@gmail.com
 5	Michelle Kimmell	12345678                        	1992-01-01	                                                                                                    	michelle2802@gmail.com
 61	Siam	12345678                        	2000-10-16	                                                                                                    	siam11651@outlook.com
+14	Joi Bellefeuille	undefined                       	1992-11-17	I am an ambitious person 🫠                                                                          	joi6193@gmail.com
+62	Abdullah Al Mohaimin	undefined                       	2000-08-30	I like to watch anime 🤤🤤🤤                                                                           	mohaimin41@gmail.com
 \.
 
 
@@ -5954,7 +6032,7 @@ COPY public.users (user_id, full_name, security_key, date_of_birth, bio, email) 
 -- Name: content_viewers_content_id_seq; Type: SEQUENCE SET; Schema: public; Owner: epathshala
 --
 
-SELECT pg_catalog.setval('public.content_viewers_content_id_seq', 2436, true);
+SELECT pg_catalog.setval('public.content_viewers_content_id_seq', 2464, true);
 
 
 --
@@ -6164,13 +6242,6 @@ CREATE TRIGGER courses_rate_trigger AFTER INSERT OR DELETE OR UPDATE OF rate ON 
 --
 
 CREATE TRIGGER enrolled_courses_insert_trigger AFTER INSERT ON public.enrolled_courses FOR EACH ROW EXECUTE FUNCTION public.enrolled_courses_insert_trigger();
-
-
---
--- Name: users insert_user_trigger; Type: TRIGGER; Schema: public; Owner: epathshala
---
-
-CREATE TRIGGER insert_user_trigger AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION public.insert_user_trigger();
 
 
 --

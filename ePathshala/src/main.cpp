@@ -9,7 +9,6 @@
 
 int main()
 {
-    // Json::Value initData;
     std::vector<std::pair<std::string, std::fstream>> downloads(1000);
 	drogon::HttpAppFramework &httpAppFramework = drogon::app();
 
@@ -36,7 +35,7 @@ int main()
             std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
             Json::Value &request = *reqJsonPtr.get();
 
-            InsertUser(request, response, dbClient);
+            InsertUser(request, response, dbClient, httpAppFramework);
         }
         else if(httpRequestPtr->getHeader("type") == "insert-question")
         {
@@ -107,6 +106,13 @@ int main()
             Json::Value &request = *reqJsonPtr.get();
 
             GetIndividualContentRate(request, response, dbClient);
+        }
+        else if(httpRequestPtr->getHeader("type") == "complete-view")
+        {
+            std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
+            Json::Value &request = *reqJsonPtr.get();
+
+            CompleteView(request, response, dbClient);
         }
         else
         {

@@ -45,3 +45,4 @@
 #include "root/Insert/View.h"
 #include "root/Update/ContentRate.h"
 #include "root/GetIndividualContentRate.h"
+#include "root/Update/View.h"
