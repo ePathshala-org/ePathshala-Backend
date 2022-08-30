@@ -47,3 +47,5 @@
 #include "root/GetIndividualContentRate.h"
 #include "root/Update/View.h"
 #include "root/SearchCourses.h"
+#include "root/SearchVideos.h"
+#include "root/SearchPages.h"

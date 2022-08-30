@@ -17,7 +17,7 @@ void SearchCourses(Json::Value &request, Json::Value &response, drogon::orm::DbC
         Json::Value course;
 
         course["COURSE_ID"] = result[i]["COURSE_ID"].as<Json::Int64>();
-        course["TITLE"] = result[i]["TITLE"].as<Json::Int64>();
+        course["TITLE"] = result[i]["TITLE"].as<Json::String>();
         response["courses"].append(course);
     }
 

@@ -22,6 +22,8 @@ int main()
     {
         Json::Value response;
 
+        // std::clog << *httpRequestPtr.get()->jsonObject().get() << std::endl;
+
         if(httpRequestPtr->getHeader("incoming") == "video-file")
         {
             UploadVideo(httpRequestPtr, response, dbClient, httpAppFramework);
@@ -114,12 +116,26 @@ int main()
 
             CompleteView(request, response, dbClient);
         }
-        else if(httpRequestPtr->getHeader("type") == "search-course")
+        else if(httpRequestPtr->getHeader("type") == "search-courses")
         {
             std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
             Json::Value &request = *reqJsonPtr.get();
 
             SearchCourses(request, response, dbClient);
+        }
+        else if(httpRequestPtr->getHeader("type") == "search-videos")
+        {
+            std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
+            Json::Value &request = *reqJsonPtr.get();
+
+            SearchVideos(request, response, dbClient);
+        }
+        else if(httpRequestPtr->getHeader("type") == "search-pages")
+        {
+            std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
+            Json::Value &request = *reqJsonPtr.get();
+
+            SearchPages(request, response, dbClient);
         }
         else
         {
