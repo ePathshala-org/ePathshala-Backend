@@ -114,6 +114,13 @@ int main()
 
             CompleteView(request, response, dbClient);
         }
+        else if(httpRequestPtr->getHeader("type") == "search-course")
+        {
+            std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
+            Json::Value &request = *reqJsonPtr.get();
+
+            SearchCourses(request, response, dbClient);
+        }
         else
         {
             std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();

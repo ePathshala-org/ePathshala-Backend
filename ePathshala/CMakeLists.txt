@@ -55,6 +55,7 @@ add_executable(ePathshala
     "src/HandleRequests/root/Update/ContentRate.cpp"
     "src/HandleRequests/root/GetIndividualContentRate.cpp"
     "src/HandleRequests/root/Update/View.cpp"
+    "src/HandleRequests/root/SearchCourses.cpp"
 )
 
 find_package(Drogon REQUIRED)

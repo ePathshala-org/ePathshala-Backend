@@ -1786,6 +1786,53 @@ $$;
 ALTER PROCEDURE public.print(IN to_print character varying) OWNER TO epathshala;
 
 --
+-- Name: search_course(character varying); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.search_course(param_search_term character varying) RETURNS TABLE(course_id bigint, title character varying, description character varying, date_of_creation date, price integer, creator_id bigint, creator_name character varying, rate numeric, enroll_count bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT COURSES.COURSE_ID, COURSES.TITLE, TRIM(COURSES.DESCRIPTION)::VARCHAR, COURSES.DATE_OF_CREATION, COURSES.PRICE, COURSES.CREATOR_ID, USERS.FULL_NAME, COURSES.RATE::NUMERIC(3, 2), COURSES.ENROLL_COUNT
+	FROM COURSES
+	JOIN ENROLLED_COURSES
+	ON(COURSES.COURSE_ID = ENROLLED_COURSES.COURSE_ID)
+	JOIN USERS
+	ON(COURSES.CREATOR_ID = USERS.USER_ID)
+	WHERE LOWER(COURSES.TITLE) LIKE CONCAT('%', LOWER(PARAM_SEARCH_TERM), '%');
+END;
+$$;
+
+
+ALTER FUNCTION public.search_course(param_search_term character varying) OWNER TO epathshala;
+
+--
+-- Name: search_video(character varying); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.search_video(param_search_term character varying) RETURNS TABLE(content_id bigint, title character varying, description character varying, rate numeric, date_of_creation date, content_type character varying, view_count bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT
+		CONTENTS.CONTENT_ID,
+		CONTENTS.TITLE,
+		TRIM(CONTENTS.DESCRIPTION)::VARCHAR,
+		CONTENTS.RATE::NUMERIC(3, 2),
+		CONTENTS.DATE_OF_CREATION,
+		TRIM(CONTENTS.CONTENT_TYPE)::VARCHAR,
+		CONTENTS.VIEW_COUNT
+	FROM 
+		CONTENTS
+	WHERE
+		CONTENTS.CONTENT_TYPE = 'PAGE' AND LOWER(CONTENTS.TITLE) LIKE CONCAT('%', LOWER(PARAM_SEARCH_TERM), '%');
+END;
+$$;
+
+
+ALTER FUNCTION public.search_video(param_search_term character varying) OWNER TO epathshala;
+
+--
 -- Name: teachers_rate_trigger(); Type: FUNCTION; Schema: public; Owner: epathshala
 --
 
