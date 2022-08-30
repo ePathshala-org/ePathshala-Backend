@@ -16,7 +16,7 @@ void InsertUser(Json::Value &request, Json::Value &response, drogon::orm::DbClie
     {
         std::string docRoot = httpAppFramework.getDocumentRoot();
         std::string defaultPath = docRoot + "/pfp/default.png";
-        std::string newPath = docRoot + "/pfp/" + result[0]["RETURN"].as<Json::String>();
+        std::string newPath = docRoot + "/pfp/" + result[0]["RETURN"].as<Json::String>() + ".png";
         std::ifstream defaultPfp(defaultPath);
         std::ofstream newPfp(newPath);
 
