@@ -41,6 +41,40 @@ $$;
 ALTER FUNCTION public.check_student_enrolled(param_user_id bigint, param_course_id bigint) OWNER TO epathshala;
 
 --
+-- Name: comment_rate_trigger(); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.comment_rate_trigger() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	AVG_RATE NUMERIC;
+	ID BIGINT;
+BEGIN
+	IF NEW.COMMENT_ID IS NOT NULL THEN
+		ID := NEW.COMMENT_ID;
+	ELSE
+		ID := OLD.COMMENT_ID;
+	END IF;
+	RAISE NOTICE 'ID %', ID;
+	SELECT AVG(RATE) INTO AVG_RATE
+	FROM COMMENT_RATES
+	WHERE COMMENT_ID = ID AND RATE != 0;
+	RAISE NOTICE 'RATE %', AVG_RATE;
+	IF AVG_RATE IS NULL THEN
+		AVG_RATE := 0;
+	END IF;
+	UPDATE COMMENTS
+	SET RATE = AVG_RATE
+	WHERE COMMENT_ID = ID;
+	RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.comment_rate_trigger() OWNER TO epathshala;
+
+--
 -- Name: conetent_view_complete_trigger(); Type: FUNCTION; Schema: public; Owner: epathshala
 --
 
@@ -1824,6 +1858,33 @@ $$;
 ALTER PROCEDURE public.update_comment_rate(IN param_comment_id bigint, IN param_rate numeric) OWNER TO epathshala;
 
 --
+-- Name: update_comment_rate(bigint, bigint, integer); Type: PROCEDURE; Schema: public; Owner: epathshala
+--
+
+CREATE PROCEDURE public.update_comment_rate(IN param_user_id bigint, IN param_comment_id bigint, IN param_rate integer)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	FOUND_RATE INT;
+BEGIN
+	SELECT RATE INTO FOUND_RATE
+	FROM COMMENT_RATES
+	WHERE USER_ID = PARAM_USER_ID AND COMMENT_ID = PARAM_COMMENT_ID;
+	IF FOUND_RATE IS NULL THEN
+		INSERT INTO COMMENT_RATES (USER_ID, COMMENT_ID, RATE)
+		VALUES (PARAM_USER_ID, PARAM_COMMENT_ID, PARAM_RATE);
+	ELSE
+		UPDATE COMMENT_RATES
+		SET RATE = PARAM_RATE
+		WHERE USER_ID = PARAM_USER_ID AND COMMENT_ID = PARAM_COMMENT_ID;
+	END IF;
+END;
+$$;
+
+
+ALTER PROCEDURE public.update_comment_rate(IN param_user_id bigint, IN param_comment_id bigint, IN param_rate integer) OWNER TO epathshala;
+
+--
 -- Name: update_content_rate(bigint, bigint, integer); Type: PROCEDURE; Schema: public; Owner: epathshala
 --
 
@@ -1973,6 +2034,20 @@ CREATE TABLE public.banks (
 
 
 ALTER TABLE public.banks OWNER TO epathshala;
+
+--
+-- Name: comment_rates; Type: TABLE; Schema: public; Owner: epathshala
+--
+
+CREATE TABLE public.comment_rates (
+    comment_id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    rate integer DEFAULT 0,
+    CONSTRAINT comment_rates_rate_check CHECK (((0 <= rate) AND (rate <= 5)))
+);
+
+
+ALTER TABLE public.comment_rates OWNER TO epathshala;
 
 --
 -- Name: comments; Type: TABLE; Schema: public; Owner: epathshala
@@ -2248,15 +2323,24 @@ COPY public.banks (bank_id, name) FROM stdin;
 
 
 --
+-- Data for Name: comment_rates; Type: TABLE DATA; Schema: public; Owner: epathshala
+--
+
+COPY public.comment_rates (comment_id, user_id, rate) FROM stdin;
+1	1	3
+\.
+
+
+--
 -- Data for Name: comments; Type: TABLE DATA; Schema: public; Owner: epathshala
 --
 
 COPY public.comments (comment_id, content_id, commenter_id, description, "time", date, rate) FROM stdin;
-1	5	5	Epic Video                                                                                          	23:43:54.742951	2022-08-09	0
 3	5	5	Loved it                                                                                            	20:04:31.84021	2022-08-24	0
 4	11	1	Ekta comment                                                                                        	22:44:10.661988	2022-08-29	0
 5	11	1	Arekta comment (edited)                                                                             	22:46:22.296031	2022-08-29	0
 6	5	1	Make more videos like this                                                                          	23:18:39.012789	2022-08-29	0
+1	5	5	Epic Video                                                                                          	23:43:54.742951	2022-08-09	3.0000000000000000
 \.
 
 
@@ -5882,6 +5966,14 @@ ALTER TABLE ONLY public.banks
 
 
 --
+-- Name: comment_rates comment_rates_pkey; Type: CONSTRAINT; Schema: public; Owner: epathshala
+--
+
+ALTER TABLE ONLY public.comment_rates
+    ADD CONSTRAINT comment_rates_pkey PRIMARY KEY (comment_id, user_id);
+
+
+--
 -- Name: comments comments_pkey; Type: CONSTRAINT; Schema: public; Owner: epathshala
 --
 
@@ -6026,6 +6118,13 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: comment_rates comment_rate_trigger; Type: TRIGGER; Schema: public; Owner: epathshala
+--
+
+CREATE TRIGGER comment_rate_trigger AFTER INSERT OR DELETE OR UPDATE OF rate ON public.comment_rates FOR EACH ROW EXECUTE FUNCTION public.comment_rate_trigger();
+
+
+--
 -- Name: content_viewers content_view_complete_trigger; Type: TRIGGER; Schema: public; Owner: epathshala
 --
 
@@ -6079,6 +6178,22 @@ CREATE TRIGGER insert_user_trigger AFTER INSERT ON public.users FOR EACH ROW EXE
 --
 
 CREATE TRIGGER teachers_rate_trigger AFTER INSERT OR DELETE OR UPDATE OF rate ON public.courses FOR EACH ROW EXECUTE FUNCTION public.teachers_rate_trigger();
+
+
+--
+-- Name: comment_rates comment_rates_comment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: epathshala
+--
+
+ALTER TABLE ONLY public.comment_rates
+    ADD CONSTRAINT comment_rates_comment_id_fkey FOREIGN KEY (comment_id) REFERENCES public.comments(comment_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: comment_rates comment_rates_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: epathshala
+--
+
+ALTER TABLE ONLY public.comment_rates
+    ADD CONSTRAINT comment_rates_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
