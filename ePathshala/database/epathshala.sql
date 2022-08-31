@@ -38,7 +38,7 @@ BEGIN
 	IF AVG_RATE IS NULL THEN
 		AVG_RATE := 0;
 	END IF;
-	UPDATE ANSWERS
+	UPDATE FORUM_ANSWERS
 	SET RATE = AVG_RATE
 	WHERE ANSWER_ID = ID;
 	RETURN NEW;
@@ -1010,6 +1010,46 @@ $$;
 
 
 ALTER FUNCTION public.get_courses_teacher_by_title_desc(param_teacher_id bigint) OWNER TO epathshala;
+
+--
+-- Name: get_individual_answer_rate(bigint, bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_individual_answer_rate(param_user_id bigint, param_answer_id bigint) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	RATE_VALUE INT;
+BEGIN
+	SELECT RATE INTO RATE_VALUE
+	FROM ANSWER_RATES
+	WHERE USER_ID = PARAM_USER_ID AND ANSWER_ID = PARAM_ANSWER_ID;
+	RETURN RATE_VALUE;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_individual_answer_rate(param_user_id bigint, param_answer_id bigint) OWNER TO epathshala;
+
+--
+-- Name: get_individual_comment_rate(bigint, bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_individual_comment_rate(param_user_id bigint, param_comment_id bigint) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	RATE_VALUE INT;
+BEGIN
+	SELECT RATE INTO RATE_VALUE
+	FROM COMMENT_RATES
+	WHERE USER_ID = PARAM_USER_ID AND COMMENT_ID = PARAM_COMMENT_ID;
+	RETURN RATE_VALUE;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_individual_comment_rate(param_user_id bigint, param_comment_id bigint) OWNER TO epathshala;
 
 --
 -- Name: get_individual_content_rate(bigint, bigint); Type: FUNCTION; Schema: public; Owner: epathshala
@@ -2086,23 +2126,6 @@ $$;
 ALTER PROCEDURE public.update_comment(IN param_comment_id bigint, IN param_description character varying) OWNER TO epathshala;
 
 --
--- Name: update_comment_rate(bigint, numeric); Type: PROCEDURE; Schema: public; Owner: epathshala
---
-
-CREATE PROCEDURE public.update_comment_rate(IN param_comment_id bigint, IN param_rate numeric)
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-	UPDATE COMMENTS
-	SET RATE = PARAM_RATE
-	WHERE COMMENT_ID = PARAM_COMMENT_ID;
-END;
-$$;
-
-
-ALTER PROCEDURE public.update_comment_rate(IN param_comment_id bigint, IN param_rate numeric) OWNER TO epathshala;
-
---
 -- Name: update_comment_rate(bigint, bigint, integer); Type: PROCEDURE; Schema: public; Owner: epathshala
 --
 
@@ -2593,6 +2616,7 @@ ALTER TABLE public.users OWNER TO epathshala;
 --
 
 COPY public.answer_rates (answer_id, user_id, rate) FROM stdin;
+4	63	4
 \.
 
 
@@ -2612,7 +2636,7 @@ COPY public.banks (bank_id, name) FROM stdin;
 --
 
 COPY public.comment_rates (comment_id, user_id, rate) FROM stdin;
-1	1	3
+11	63	3
 \.
 
 
@@ -2625,12 +2649,13 @@ COPY public.comments (comment_id, content_id, commenter_id, description, "time",
 4	11	1	Ekta comment                                                                                        	22:44:10.661988	2022-08-29	0
 5	11	1	Arekta comment (edited)                                                                             	22:46:22.296031	2022-08-29	0
 6	5	1	Make more videos like this                                                                          	23:18:39.012789	2022-08-29	0
-1	5	5	Epic Video                                                                                          	23:43:54.742951	2022-08-09	3.0000000000000000
 2	105	\N	Shundor hoise 😌                                                                                     	22:13:27.018853	2022-08-30	0
 7	112	\N	Need more videos like this                                                                          	00:47:19.369986	2022-08-31	0
 8	112	63	Valo video                                                                                          	01:03:38.67246	2022-08-31	0
 9	113	63	Valo lekha                                                                                          	01:06:41.919008	2022-08-31	0
-10	114	63	Best video                                                                                          	01:27:59.550545	2022-08-31	5.000000
+10	114	63	Best video                                                                                          	01:27:59.550545	2022-08-31	0
+1	5	5	Epic Video                                                                                          	23:43:54.742951	2022-08-09	0
+11	2	63	nICE vIDEO                                                                                          	08:47:28.012555	2022-08-31	3.0000000000000000
 \.
 
 
@@ -2646,6 +2671,9 @@ COPY public.content_viewers (view_id, content_id, user_id, rate, completed) FROM
 2473	113	63	0	t
 2468	112	63	3	f
 2480	114	63	5	f
+2490	2	63	0	f
+2491	19	63	0	f
+2492	5	63	0	f
 2313	24	47	0	f
 1	97	1	0	f
 78	5	1	0	f
@@ -5134,7 +5162,7 @@ COPY public.contents (content_id, date_of_creation, content_type, title, descrip
 25	2019-10-19	QUIZ      	Equivalent expressions	Description of quiz 'Equivalent expressions'                                                        	1	0	26
 22	2019-10-19	QUIZ      	Combining like terms with negative coefficients and distribution	Description of quiz 'Combining like terms with negative coefficients and distribution'              	1	0	26
 31	2019-10-01	VIDEO     	Finding average rate of change of polynomials	Description of video 'Finding average rate of change of polynomials'                                	2	0	25
-5	2019-10-19	VIDEO     	Intro to the coordinate plane	Description of video 'Intro to the coordinate plane'                                                	1	0	27
+5	2019-10-19	VIDEO     	Intro to the coordinate plane	Description of video 'Intro to the coordinate plane'                                                	1	0	28
 29	2019-10-01	VIDEO     	Polinomials intro	Description of video 'Polinomials intro'                                                            	2	0	25
 30	2019-10-01	VIDEO     	The parts of polynomial expressions	Description of video 'The parts of polynomial expressions'                                          	2	0	25
 49	2019-10-01	VIDEO     	Multiply binomials by polynomials: area model	Description of video 'Multiply binomials by polynomials: area model'                                	2	0	25
@@ -5193,8 +5221,8 @@ COPY public.contents (content_id, date_of_creation, content_type, title, descrip
 17	2019-10-19	QUIZ      	Evaluating expressions with multiple variables: fractions and decimals	Description of quiz 'Evaluating expressions with multiple variables: fractions and decimals'        	1	0	26
 18	2019-10-19	VIDEO     	Combining like terms with negative coefficients & distribution	Description of video 'Combining like terms with negative coefficients & distribution'               	1	0	26
 15	2019-10-19	PAGE      	Evaluating expressions with two variables: fractions & decimals	Description of page 'Evaluating expressions with two variables: fractions & decimals'               	1	0	26
-19	2019-10-19	VIDEO     	Combining like terms with negative coefficients	Description of video 'Combining like terms with negative coefficients'                              	1	3.0000000000000000	27
-2	2019-10-19	VIDEO     	Abstract-ness	Description of video 'Abstract-ness'                                                                	1	2.5000000000000000	28
+2	2019-10-19	VIDEO     	Abstract-ness	Description of video 'Abstract-ness'                                                                	1	2.5000000000000000	29
+19	2019-10-19	VIDEO     	Combining like terms with negative coefficients	Description of video 'Combining like terms with negative coefficients'                              	1	3.0000000000000000	28
 \.
 
 
@@ -5520,6 +5548,7 @@ COPY public.course_remain_contents (user_id, course_id, complete_count, remain_c
 14	9	0	3
 63	12	1	0
 63	13	0	1
+63	1	0	28
 \.
 
 
@@ -5560,7 +5589,7 @@ COPY public.courses (course_id, title, description, date_of_creation, price, cre
 5	Statistics	Learn statistics basics                                                                             	2020-03-12	700	55	0	34
 4	Trigonometry	Master trigonometry                                                                                 	2020-03-11	600	54	0	40
 3	Geometry	Learn geometry having fun                                                                           	2020-10-15	600	53	0	45
-1	Algebra 1	Introduction to algebra                                                                             	2019-10-19	500	51	2.7500000000000000	50
+1	Algebra 1	Introduction to algebra                                                                             	2019-10-19	500	51	2.7500000000000000	51
 2	Algebra 2	Some advanced topics on algebra                                                                     	2019-10-01	500	52	0	46
 \.
 
@@ -5887,6 +5916,7 @@ COPY public.enrolled_courses (user_id, course_id, date_of_join) FROM stdin;
 14	9	2022-08-30
 63	12	2022-08-31
 63	13	2022-08-31
+63	1	2022-08-31
 \.
 
 
@@ -5898,7 +5928,7 @@ COPY public.forum_answers (answer_id, answerer_id, question_id, answer, date_of_
 1	1	1	idk	2022-08-31	07:07:30.591935+06	0
 2	2	2	idk	2022-08-31	07:07:56.919883+06	0
 3	3	1	idk either	2022-08-31	07:08:23.706391+06	0
-4	62	1	ekta answer :(	2022-08-31	08:13:47.246665+06	0
+4	62	1	ekta answer :(	2022-08-31	08:13:47.246665+06	4.0000000000000000
 \.
 
 
@@ -6196,7 +6226,7 @@ COPY public.teachers (user_id, date_of_join, credit, rate) FROM stdin;
 56	2020-05-08	0	0
 55	2020-03-12	2800	0
 54	2020-03-11	0	0
-51	2019-10-19	1000	2.7500000000000000
+51	2019-10-19	1500	2.7500000000000000
 53	2020-10-15	0	0
 52	2019-10-01	0	0
 \.
@@ -6277,7 +6307,7 @@ COPY public.users (user_id, full_name, security_key, date_of_birth, bio, email) 
 -- Name: content_viewers_content_id_seq; Type: SEQUENCE SET; Schema: public; Owner: epathshala
 --
 
-SELECT pg_catalog.setval('public.content_viewers_content_id_seq', 2488, true);
+SELECT pg_catalog.setval('public.content_viewers_content_id_seq', 2497, true);
 
 
 --
