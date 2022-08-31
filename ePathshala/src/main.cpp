@@ -172,6 +172,27 @@ int main()
 
             DeleteAnswer(request, dbClient);
         }
+        else if(httpRequestPtr->getHeader("type") == "get-individual-comment-rate")
+        {
+            std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
+            Json::Value &request = *reqJsonPtr.get();
+
+            GetIndividualCommentRate(request, response, dbClient);
+        }
+        else if(httpRequestPtr->getHeader("type") == "get-individual-answer-rate")
+        {
+            std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
+            Json::Value &request = *reqJsonPtr.get();
+
+            GetIndividualAnswerRate(request, response, dbClient);
+        }
+        else if(httpRequestPtr->getHeader("type") == "update-answer-rate")
+        {
+            std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
+            Json::Value &request = *reqJsonPtr.get();
+
+            UpdateAnswerRate(request, dbClient);
+        }
         else
         {
             std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();

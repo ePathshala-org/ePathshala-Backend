@@ -54,3 +54,6 @@
 #include "root/Insert/Answer.h"
 #include "root/Update/Answer.h"
 #include "root/Delete/Answer.h"
+#include "root/GetIndividualCommentRate.h"
+#include "root/GetIndividualAnswerRate.h"
+#include "root/Update/AnswerRate.h"

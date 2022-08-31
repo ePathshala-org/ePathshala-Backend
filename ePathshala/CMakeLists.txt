@@ -63,6 +63,9 @@ add_executable(ePathshala
     "src/HandleRequests/root/Insert/Answer.cpp"
     "src/HandleRequests/root/Update/Answer.cpp"
     "src/HandleRequests/root/Delete/Answer.cpp"
+    "src/HandleRequests/root/GetIndividualCommentRate.cpp"
+    "src/HandleRequests/root/GetIndividualAnswerRate.cpp"
+    "src/HandleRequests/root/Update/AnswerRate.cpp"
 )
 
 find_package(Drogon REQUIRED)
