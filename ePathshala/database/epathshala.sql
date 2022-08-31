@@ -17,6 +17,38 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- Name: answer_rate_trigger(); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.answer_rate_trigger() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	AVG_RATE NUMERIC;
+	ID BIGINT;
+BEGIN
+	IF NEW.ANSWER_ID IS NOT NULL THEN
+		ID := NEW.ANSWER_ID;
+	ELSE
+		ID := OLD.ANSWER_ID;
+	END IF;
+	SELECT AVG(RATE) INTO AVG_RATE
+	FROM ANSWER_RATES
+	WHERE ANSWER_ID = ID AND RATE != 0;
+	IF AVG_RATE IS NULL THEN
+		AVG_RATE := 0;
+	END IF;
+	UPDATE ANSWERS
+	SET RATE = AVG_RATE
+	WHERE ANSWER_ID = ID;
+	RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.answer_rate_trigger() OWNER TO epathshala;
+
+--
 -- Name: check_student_enrolled(bigint, bigint); Type: FUNCTION; Schema: public; Owner: epathshala
 --
 
@@ -306,6 +338,22 @@ $$;
 ALTER FUNCTION public.courses_rate_trigger() OWNER TO epathshala;
 
 --
+-- Name: delete_answer(bigint); Type: PROCEDURE; Schema: public; Owner: epathshala
+--
+
+CREATE PROCEDURE public.delete_answer(IN param_answer_id bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	DELETE FROM FORUM_ANSWERS
+	WHERE ANSWER_ID = PARAM_ANSWER_ID;
+END;
+$$;
+
+
+ALTER PROCEDURE public.delete_answer(IN param_answer_id bigint) OWNER TO epathshala;
+
+--
 -- Name: delete_comment(bigint); Type: PROCEDURE; Schema: public; Owner: epathshala
 --
 
@@ -424,6 +472,34 @@ $$;
 
 
 ALTER FUNCTION public.enrolled_courses_insert_trigger() OWNER TO epathshala;
+
+--
+-- Name: get_answers_by_time_desc(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_answers_by_time_desc(param_question_id bigint) RETURNS TABLE(answer_id bigint, question_id bigint, answerer_id bigint, answerer_name character varying, answer character varying, time_of_answer time with time zone, date_of_answer date, rate numeric)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY SELECT
+		FORUM_ANSWERS.ANSWER_ID,
+		FORUM_ANSWERS.QUESTION_ID,
+		FORUM_ANSWERS.ANSWERER_ID,
+		USERS.FULL_NAME,
+		TRIM(FORUM_ANSWERS.ANSWER)::VARCHAR,
+		FORUM_ANSWERS.TIME_OF_ANSWER::TIME(0) WITH TIME ZONE,
+		FORUM_ANSWERS.DATE_OF_ANSWER,
+		FORUM_ANSWERS.RATE::NUMERIC(3, 1)
+	FROM FORUM_ANSWERS
+	JOIN USERS
+	ON (FORUM_ANSWERS.ANSWERER_ID = USERS.USER_ID)
+	WHERE FORUM_ANSWERS.QUESTION_ID = PARAM_QUESTION_ID
+	ORDER BY FORUM_ANSWERS.DATE_OF_ANSWER DESC, FORUM_ANSWERS.TIME_OF_ANSWER DESC;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_answers_by_time_desc(param_question_id bigint) OWNER TO epathshala;
 
 --
 -- Name: get_comments_by_rate_asc(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
@@ -972,6 +1048,38 @@ $$;
 
 
 ALTER FUNCTION public.get_interests(param_user_id bigint) OWNER TO epathshala;
+
+--
+-- Name: get_new_answer_id(); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_new_answer_id() RETURNS bigint
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	MAX_ANSWER_ID BIGINT;
+	NEW_ANSWER_ID BIGINT;
+BEGIN
+	SELECT MAX(ANSWER_ID) INTO MAX_ANSWER_ID
+	FROM FORUM_ANSWERS;
+	IF MAX_ANSWER_ID IS NULL THEN
+		RETURN 1;
+	ELSE
+		FOR I IN 1..MAX_ANSWER_ID LOOP
+			SELECT ANSWER_ID INTO NEW_ANSWER_ID
+			FROM FORUM_ANSWERS
+			WHERE ANSWER_ID = I;
+			IF NEW_ANSWER_ID IS NULL THEN
+				RETURN I;
+			END IF;
+		END LOOP;
+		RETURN MAX_ANSWER_ID + 1;
+	END IF;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_new_answer_id() OWNER TO epathshala;
 
 --
 -- Name: get_new_comment_id(); Type: FUNCTION; Schema: public; Owner: epathshala
@@ -1769,6 +1877,26 @@ $$;
 ALTER PROCEDURE public.pay_course_teacher_credit(IN param_course_id bigint, IN param_amount integer) OWNER TO epathshala;
 
 --
+-- Name: post_answer(bigint, bigint, character varying); Type: PROCEDURE; Schema: public; Owner: epathshala
+--
+
+CREATE PROCEDURE public.post_answer(IN param_user_id bigint, IN param_question_id bigint, IN param_answer character varying)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	NEW_ANSWER_ID BIGINT;
+BEGIN
+	NEW_ANSWER_ID := GET_NEW_ANSWER_ID();
+	INSERT INTO FORUM_ANSWERS (ANSWER_ID, QUESTION_ID, ANSWERER_ID, ANSWER)
+	VALUES
+		(NEW_ANSWER_ID, PARAM_QUESTION_ID, PARAM_USER_ID, PARAM_ANSWER);
+END;
+$$;
+
+
+ALTER PROCEDURE public.post_answer(IN param_user_id bigint, IN param_question_id bigint, IN param_answer character varying) OWNER TO epathshala;
+
+--
 -- Name: post_comment(bigint, bigint, character varying); Type: PROCEDURE; Schema: public; Owner: epathshala
 --
 
@@ -1895,6 +2023,50 @@ $$;
 
 
 ALTER FUNCTION public.teachers_rate_trigger() OWNER TO epathshala;
+
+--
+-- Name: update_answer(bigint, character varying); Type: PROCEDURE; Schema: public; Owner: epathshala
+--
+
+CREATE PROCEDURE public.update_answer(IN param_answer_id bigint, IN param_answer character varying)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	UPDATE FORUM_ANSWERS
+	SET ANSWER = PARAM_ANSWER
+	WHERE ANSWER_ID = PARAM_ANSWER_ID;
+END;
+$$;
+
+
+ALTER PROCEDURE public.update_answer(IN param_answer_id bigint, IN param_answer character varying) OWNER TO epathshala;
+
+--
+-- Name: update_answer_rate(bigint, bigint, integer); Type: PROCEDURE; Schema: public; Owner: epathshala
+--
+
+CREATE PROCEDURE public.update_answer_rate(IN param_user_id bigint, IN param_answer_id bigint, IN param_rate integer)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	FOUND_RATE INT;
+BEGIN
+	SELECT RATE INTO FOUND_RATE
+	FROM ANSWER_RATES
+	WHERE USER_ID = PARAM_USER_ID AND ANSWER_ID = PARAM_ANSWER_ID;
+	IF FOUND_RATE IS NULL THEN
+		INSERT INTO ANSWER_RATES (USER_ID, ANSWER_ID, RATE)
+		VALUES (PARAM_USER_ID, PARAM_ANSWER_ID, PARAM_RATE);
+	ELSE
+		UPDATE ANSWER_RATES
+		SET RATE = PARAM_RATE
+		WHERE USER_ID = PARAM_USER_ID AND ANSWER_ID = PARAM_ANSWER_ID;
+	END IF;
+END;
+$$;
+
+
+ALTER PROCEDURE public.update_answer_rate(IN param_user_id bigint, IN param_answer_id bigint, IN param_rate integer) OWNER TO epathshala;
 
 --
 -- Name: update_comment(bigint, character varying); Type: PROCEDURE; Schema: public; Owner: epathshala
@@ -2096,6 +2268,20 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
+-- Name: answer_rates; Type: TABLE; Schema: public; Owner: epathshala
+--
+
+CREATE TABLE public.answer_rates (
+    answer_id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    rate integer,
+    CONSTRAINT answer_rates_rate_check CHECK (((0 <= rate) AND (rate <= 5)))
+);
+
+
+ALTER TABLE public.answer_rates OWNER TO epathshala;
+
+--
 -- Name: banks; Type: TABLE; Schema: public; Owner: epathshala
 --
 
@@ -2257,6 +2443,24 @@ CREATE TABLE public.enrolled_courses (
 ALTER TABLE public.enrolled_courses OWNER TO epathshala;
 
 --
+-- Name: forum_answers; Type: TABLE; Schema: public; Owner: epathshala
+--
+
+CREATE TABLE public.forum_answers (
+    answer_id bigint NOT NULL,
+    answerer_id bigint,
+    question_id bigint,
+    answer character varying,
+    date_of_answer date DEFAULT CURRENT_DATE,
+    time_of_answer time with time zone DEFAULT CURRENT_TIME,
+    rate numeric DEFAULT 0,
+    CONSTRAINT forum_answers_rate_check CHECK ((((0)::numeric <= rate) AND (rate <= (5)::numeric)))
+);
+
+
+ALTER TABLE public.forum_answers OWNER TO epathshala;
+
+--
 -- Name: forum_questions; Type: TABLE; Schema: public; Owner: epathshala
 --
 
@@ -2383,6 +2587,14 @@ CREATE TABLE public.users (
 
 
 ALTER TABLE public.users OWNER TO epathshala;
+
+--
+-- Data for Name: answer_rates; Type: TABLE DATA; Schema: public; Owner: epathshala
+--
+
+COPY public.answer_rates (answer_id, user_id, rate) FROM stdin;
+\.
+
 
 --
 -- Data for Name: banks; Type: TABLE DATA; Schema: public; Owner: epathshala
@@ -5679,6 +5891,18 @@ COPY public.enrolled_courses (user_id, course_id, date_of_join) FROM stdin;
 
 
 --
+-- Data for Name: forum_answers; Type: TABLE DATA; Schema: public; Owner: epathshala
+--
+
+COPY public.forum_answers (answer_id, answerer_id, question_id, answer, date_of_answer, time_of_answer, rate) FROM stdin;
+1	1	1	idk	2022-08-31	07:07:30.591935+06	0
+2	2	2	idk	2022-08-31	07:07:56.919883+06	0
+3	3	1	idk either	2022-08-31	07:08:23.706391+06	0
+4	62	1	ekta answer :(	2022-08-31	08:13:47.246665+06	0
+\.
+
+
+--
 -- Data for Name: forum_questions; Type: TABLE DATA; Schema: public; Owner: epathshala
 --
 
@@ -6057,6 +6281,14 @@ SELECT pg_catalog.setval('public.content_viewers_content_id_seq', 2488, true);
 
 
 --
+-- Name: answer_rates answer_rates_pkey; Type: CONSTRAINT; Schema: public; Owner: epathshala
+--
+
+ALTER TABLE ONLY public.answer_rates
+    ADD CONSTRAINT answer_rates_pkey PRIMARY KEY (answer_id, user_id);
+
+
+--
 -- Name: banks bank_pkey; Type: CONSTRAINT; Schema: public; Owner: epathshala
 --
 
@@ -6134,6 +6366,14 @@ ALTER TABLE ONLY public.courses
 
 ALTER TABLE ONLY public.enrolled_courses
     ADD CONSTRAINT enrolled_courses_pkey PRIMARY KEY (user_id, course_id);
+
+
+--
+-- Name: forum_answers forum_answers_pkey; Type: CONSTRAINT; Schema: public; Owner: epathshala
+--
+
+ALTER TABLE ONLY public.forum_answers
+    ADD CONSTRAINT forum_answers_pkey PRIMARY KEY (answer_id);
 
 
 --
@@ -6217,6 +6457,13 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: answer_rates answer_rate_trigger; Type: TRIGGER; Schema: public; Owner: epathshala
+--
+
+CREATE TRIGGER answer_rate_trigger AFTER INSERT OR DELETE OR UPDATE OF rate ON public.answer_rates FOR EACH ROW EXECUTE FUNCTION public.answer_rate_trigger();
+
+
+--
 -- Name: comment_rates comment_rate_trigger; Type: TRIGGER; Schema: public; Owner: epathshala
 --
 
@@ -6270,6 +6517,22 @@ CREATE TRIGGER enrolled_courses_insert_trigger AFTER INSERT ON public.enrolled_c
 --
 
 CREATE TRIGGER teachers_rate_trigger AFTER INSERT OR DELETE OR UPDATE OF rate ON public.courses FOR EACH ROW EXECUTE FUNCTION public.teachers_rate_trigger();
+
+
+--
+-- Name: answer_rates answer_rates_answer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: epathshala
+--
+
+ALTER TABLE ONLY public.answer_rates
+    ADD CONSTRAINT answer_rates_answer_id_fkey FOREIGN KEY (answer_id) REFERENCES public.forum_answers(answer_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: answer_rates answer_rates_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: epathshala
+--
+
+ALTER TABLE ONLY public.answer_rates
+    ADD CONSTRAINT answer_rates_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -6374,6 +6637,22 @@ ALTER TABLE ONLY public.enrolled_courses
 
 ALTER TABLE ONLY public.enrolled_courses
     ADD CONSTRAINT enrolled_courses_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.students(user_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: forum_answers forum_answers_answerer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: epathshala
+--
+
+ALTER TABLE ONLY public.forum_answers
+    ADD CONSTRAINT forum_answers_answerer_id_fkey FOREIGN KEY (answerer_id) REFERENCES public.users(user_id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: forum_answers forum_answers_question_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: epathshala
+--
+
+ALTER TABLE ONLY public.forum_answers
+    ADD CONSTRAINT forum_answers_question_id_fkey FOREIGN KEY (question_id) REFERENCES public.forum_questions(question_id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
