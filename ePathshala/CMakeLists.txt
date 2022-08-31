@@ -59,6 +59,10 @@ add_executable(ePathshala
     "src/HandleRequests/root/SearchVideos.cpp"
     "src/HandleRequests/root/SearchPages.cpp"
     "src/HandleRequests/root/CollectCredit.cpp"
+    "src/HandleRequests/root/GetAnswers.cpp"
+    "src/HandleRequests/root/Insert/Answer.cpp"
+    "src/HandleRequests/root/Update/Answer.cpp"
+    "src/HandleRequests/root/Delete/Answer.cpp"
 )
 
 find_package(Drogon REQUIRED)

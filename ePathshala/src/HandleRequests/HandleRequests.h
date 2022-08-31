@@ -50,3 +50,7 @@
 #include "root/SearchVideos.h"
 #include "root/SearchPages.h"
 #include "root/CollectCredit.h"
+#include "root/GetAnswers.h"
+#include "root/Insert/Answer.h"
+#include "root/Update/Answer.h"
+#include "root/Delete/Answer.h"

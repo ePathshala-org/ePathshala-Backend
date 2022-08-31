@@ -144,6 +144,34 @@ int main()
 
             CollectCredit(request, response, dbClient);
         }
+        else if(httpRequestPtr->getHeader("type") == "get-answers")
+        {
+            std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
+            Json::Value &request = *reqJsonPtr.get();
+
+            GetAnswers(request, response, dbClient);            
+        }
+        else if(httpRequestPtr->getHeader("type") == "post-answer")
+        {
+            std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
+            Json::Value &request = *reqJsonPtr.get();
+
+            PostAnswer(request, dbClient);
+        }
+        else if(httpRequestPtr->getHeader("type") == "update-answer")
+        {
+            std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
+            Json::Value &request = *reqJsonPtr.get();
+
+            UpdateAnswer(request, dbClient);
+        }
+        else if(httpRequestPtr->getHeader("type") == "delete-answer")
+        {
+            std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
+            Json::Value &request = *reqJsonPtr.get();
+
+            DeleteAnswer(request, dbClient);
+        }
         else
         {
             std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
