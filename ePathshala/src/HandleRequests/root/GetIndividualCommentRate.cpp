@@ -6,7 +6,7 @@ void GetIndividualCommentRate(Json::Value &request, Json::Value &response, drogo
 
     std::stringstream queryStream("SELECT GET_INDIVIDUAL_COMMENT_RATE($1, $2) AS RETURN");
 
-    std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), request["user_id"].asInt64(), request["content_id"].asInt64());
+    std::shared_future<drogon::orm::Result> resultFuture = dbClient.execSqlAsyncFuture(queryStream.str(), request["user_id"].asInt64(), request["comment_id"].asInt64());
 
     resultFuture.wait();
 

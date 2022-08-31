@@ -418,6 +418,22 @@ $$;
 ALTER PROCEDURE public.delete_interest(IN param_student_id bigint, IN param_interest character varying) OWNER TO epathshala;
 
 --
+-- Name: delete_question(bigint); Type: PROCEDURE; Schema: public; Owner: epathshala
+--
+
+CREATE PROCEDURE public.delete_question(IN param_question_id bigint)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	DELETE FROM FORUM_QUESTIONS
+	WHERE QUESTION_ID = PARAM_QUESTION_ID;
+END;
+$$;
+
+
+ALTER PROCEDURE public.delete_question(IN param_question_id bigint) OWNER TO epathshala;
+
+--
 -- Name: delete_speciality(bigint, character varying); Type: PROCEDURE; Schema: public; Owner: epathshala
 --
 
@@ -1070,6 +1086,26 @@ $$;
 
 
 ALTER FUNCTION public.get_individual_content_rate(param_user_id bigint, param_content_id bigint) OWNER TO epathshala;
+
+--
+-- Name: get_individual_question_rate(bigint, bigint); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.get_individual_question_rate(param_user_id bigint, param_question_id bigint) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	RATE_VALUE INT;
+BEGIN
+	SELECT RATE INTO RATE_VALUE
+	FROM QUESTION_RATES
+	WHERE USER_ID = PARAM_USER_ID AND QUESTION_ID = PARAM_QUESTION_ID;
+	RETURN RATE_VALUE;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_individual_question_rate(param_user_id bigint, param_question_id bigint) OWNER TO epathshala;
 
 --
 -- Name: get_interests(bigint); Type: FUNCTION; Schema: public; Owner: epathshala
@@ -1972,6 +2008,38 @@ $$;
 ALTER PROCEDURE public.print(IN to_print character varying) OWNER TO epathshala;
 
 --
+-- Name: question_rate_trigger(); Type: FUNCTION; Schema: public; Owner: epathshala
+--
+
+CREATE FUNCTION public.question_rate_trigger() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	AVG_RATE NUMERIC;
+	ID BIGINT;
+BEGIN
+	IF NEW.QUESTION_ID IS NOT NULL THEN
+		ID := NEW.QUESTION_ID;
+	ELSE
+		ID := OLD.QUESTION_ID;
+	END IF;
+	SELECT AVG(RATE) INTO AVG_RATE
+	FROM QUESTION_RATES
+	WHERE QUESTION_ID = ID AND RATE != 0;
+	IF AVG_RATE IS NULL THEN
+		AVG_RATE := 0;
+	END IF;
+	UPDATE FORUM_QUESTIONS
+	SET RATE = AVG_RATE
+	WHERE QUESTION_ID = ID;
+	RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.question_rate_trigger() OWNER TO epathshala;
+
+--
 -- Name: search_courses(character varying); Type: FUNCTION; Schema: public; Owner: epathshala
 --
 
@@ -2220,6 +2288,33 @@ $$;
 
 
 ALTER FUNCTION public.update_page(param_content_id bigint, param_title character varying) OWNER TO epathshala;
+
+--
+-- Name: update_question_rate(bigint, bigint, integer); Type: PROCEDURE; Schema: public; Owner: epathshala
+--
+
+CREATE PROCEDURE public.update_question_rate(IN param_user_id bigint, IN param_question_id bigint, IN param_rate integer)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	FOUND_RATE INT;
+BEGIN
+	SELECT RATE INTO FOUND_RATE
+	FROM QUESTION_RATES
+	WHERE USER_ID = PARAM_USER_ID AND QUESTION_ID = PARAM_QUESTION_ID;
+	IF FOUND_RATE IS NULL THEN
+		INSERT INTO QUESTION_RATES (USER_ID, QUESTION_ID, RATE)
+		VALUES (PARAM_USER_ID, PARAM_QUESTION_ID, PARAM_RATE);
+	ELSE
+		UPDATE QUESTION_RATES
+		SET RATE = PARAM_RATE
+		WHERE USER_ID = PARAM_USER_ID AND QUESTION_ID = PARAM_QUESTION_ID;
+	END IF;
+END;
+$$;
+
+
+ALTER PROCEDURE public.update_question_rate(IN param_user_id bigint, IN param_question_id bigint, IN param_rate integer) OWNER TO epathshala;
 
 --
 -- Name: update_user_details(bigint, character varying, character varying, character varying, character varying, character varying); Type: FUNCTION; Schema: public; Owner: epathshala
@@ -2525,6 +2620,20 @@ CREATE TABLE public.query_count (
 ALTER TABLE public.query_count OWNER TO epathshala;
 
 --
+-- Name: question_rates; Type: TABLE; Schema: public; Owner: epathshala
+--
+
+CREATE TABLE public.question_rates (
+    question_id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    rate integer,
+    CONSTRAINT question_rates_rate_check CHECK (((0 <= rate) AND (rate <= 5)))
+);
+
+
+ALTER TABLE public.question_rates OWNER TO epathshala;
+
+--
 -- Name: quiz_grades; Type: TABLE; Schema: public; Owner: epathshala
 --
 
@@ -2616,7 +2725,12 @@ ALTER TABLE public.users OWNER TO epathshala;
 --
 
 COPY public.answer_rates (answer_id, user_id, rate) FROM stdin;
-4	63	4
+1	61	3
+7	61	2
+6	63	3
+6	61	2
+1	63	5
+1	51	5
 \.
 
 
@@ -2637,6 +2751,19 @@ COPY public.banks (bank_id, name) FROM stdin;
 
 COPY public.comment_rates (comment_id, user_id, rate) FROM stdin;
 11	63	3
+12	63	3
+8	65	5
+2	17	0
+18	10	2
+19	10	3
+20	10	3
+22	10	3
+21	10	4
+23	10	3
+11	10	5
+12	10	1
+24	10	4
+26	10	4
 \.
 
 
@@ -2649,13 +2776,27 @@ COPY public.comments (comment_id, content_id, commenter_id, description, "time",
 4	11	1	Ekta comment                                                                                        	22:44:10.661988	2022-08-29	0
 5	11	1	Arekta comment (edited)                                                                             	22:46:22.296031	2022-08-29	0
 6	5	1	Make more videos like this                                                                          	23:18:39.012789	2022-08-29	0
-2	105	\N	Shundor hoise 😌                                                                                     	22:13:27.018853	2022-08-30	0
 7	112	\N	Need more videos like this                                                                          	00:47:19.369986	2022-08-31	0
-8	112	63	Valo video                                                                                          	01:03:38.67246	2022-08-31	0
 9	113	63	Valo lekha                                                                                          	01:06:41.919008	2022-08-31	0
 10	114	63	Best video                                                                                          	01:27:59.550545	2022-08-31	0
 1	5	5	Epic Video                                                                                          	23:43:54.742951	2022-08-09	0
-11	2	63	nICE vIDEO                                                                                          	08:47:28.012555	2022-08-31	3.0000000000000000
+13	107	64	This is good to learn economics                                                                     	11:02:51.202425	2022-08-31	0
+8	112	63	Valo video                                                                                          	01:03:38.67246	2022-08-31	5.0000000000000000
+14	98	10	kisu ektta likhlam                                                                                  	11:31:43.801338	2022-08-31	0
+15	79	10	i understand                                                                                        	11:33:03.644771	2022-08-31	0
+16	79	10	it is helpful                                                                                       	11:33:39.268065	2022-08-31	0
+17	79	10	liklam kichu edited                                                                                 	11:33:57.284174	2022-08-31	0
+2	105	\N	Shundor hoise 😌                                                                                     	22:13:27.018853	2022-08-30	0
+18	86	10	it is helpful                                                                                       	11:35:51.112596	2022-08-31	2.0000000000000000
+21	71	10	it is nice edited                                                                                   	12:04:55.330973	2022-08-31	4.0000000000000000
+22	71	10	it is nice edited                                                                                   	12:05:19.696601	2022-08-31	3.0000000000000000
+19	87	10	a comment edit                                                                                      	11:38:44.515951	2022-08-31	3.0000000000000000
+12	2	63	Pocha video                                                                                         	10:44:16.146738	2022-08-31	2.0000000000000000
+23	64	10	it is nice edited                                                                                   	12:09:10.640683	2022-08-31	3.0000000000000000
+20	70	10	it is helpful edited                                                                                	11:52:11.07947	2022-08-31	3.0000000000000000
+24	2	10	hi edit                                                                                             	14:53:39.059091	2022-08-31	4.0000000000000000
+26	2	10	wow!                                                                                                	13:32:37.675098	2022-08-31	4.0000000000000000
+11	2	63	nICE vIDEO                                                                                          	08:47:28.012555	2022-08-31	4.0000000000000000
 \.
 
 
@@ -5101,6 +5242,18 @@ COPY public.content_viewers (view_id, content_id, user_id, rate, completed) FROM
 2425	19	48	0	f
 2426	15	48	0	f
 2428	2	14	2	f
+2498	11	63	0	t
+2501	107	64	4	f
+2502	112	65	5	f
+2503	98	10	0	f
+2504	79	10	3	t
+2506	86	10	3	f
+2507	87	10	4	t
+2514	70	10	2	t
+2522	71	10	2	t
+2524	64	10	3	f
+2525	\N	63	5	t
+2527	2	10	5	f
 \.
 
 
@@ -5111,18 +5264,15 @@ COPY public.content_viewers (view_id, content_id, user_id, rate, completed) FROM
 COPY public.contents (content_id, date_of_creation, content_type, title, description, course_id, rate, view_count) FROM stdin;
 111	2022-08-29	PAGE      	A Page	                                                                                                    	11	0	0
 110	2022-08-26	VIDEO     	A Video	Description of a video                                                                              	11	0	0
-112	2022-08-31	VIDEO     	Sadif Course 1 Video 1	Sadif Course 1 Video 1 Description                                                                  	12	3.0000000000000000	2
 113	2022-08-31	PAGE      	Sadif Course 1 Page 1	                                                                                                    	12	0	1
 114	2022-08-31	VIDEO     	Sadif Course 2 Video 1	Sadif Course 2 Video 1 Description                                                                  	13	5.0000000000000000	1
 108	2021-05-15	VIDEO     	Scarcity	Description of video 'Scarcity'                                                                     	10	0	4
 109	2021-05-15	VIDEO     	Normative and positive statements	Description of video 'Normative and positive statements'                                            	10	0	4
-107	2021-05-15	VIDEO     	Introoduction to economics	Description of video 'Introoduction to economics'                                                   	10	0	4
 104	2021-03-13	PAGE      	How do computers represent data?	Description of page 'How do computers represent data?'                                              	9	0	7
 106	2021-03-13	PAGE      	Bits (binary digits)	Description of page 'Bits (binary digits)'                                                          	9	0	7
 105	2021-03-13	VIDEO     	Binary and data	Description of video 'Binary and data'                                                              	9	0	7
 96	2020-05-08	VIDEO     	Reading pictographs	Description of video 'Reading pictographs'                                                          	6	0	14
 95	2020-05-08	VIDEO     	Identifying individuals, variables and catagorical variables in a data set	Description of video 'Identifying individuals, variables and catagorical variables in a data set'   	6	0	14
-98	2020-05-08	VIDEO     	Creating a bar graph	Description of video 'Creating a bar graph'                                                         	6	0	14
 102	2020-11-13	VIDEO     	Scarcity	Description of video 'Scarcity'                                                                     	8	0	10
 101	2020-11-13	VIDEO     	Introduction to economics	Description of video 'Introduction to economics'                                                    	8	0	10
 103	2020-11-13	VIDEO     	Scarcity and rivalry	Description of video 'Scarcity and rivalry'                                                         	8	0	10
@@ -5141,13 +5291,13 @@ COPY public.contents (content_id, date_of_creation, content_type, title, descrip
 83	2020-03-11	VIDEO     	Using right triangle ratios to approximate angle measure	Description of video 'Using right triangle ratios to approximate angle measure'                     	4	0	22
 80	2020-03-11	PAGE      	Hypotenuse, opposite and trigonometry	Description of page 'Hypotenuse, opposite and trigonometry'                                         	4	0	22
 85	2020-03-11	VIDEO     	Triangle similarity & the trigonometric ratios	Description of video 'Triangle similarity & the trigonometric ratios'                               	4	0	22
-87	2020-03-11	PAGE      	Traingle ratios in right triangles	Description of page 'Traingle ratios in right triangles'                                            	4	0	22
-79	2020-03-11	PAGE      	Getting ready for right triangles and trigonometry	Description of page 'Getting ready for right triangles and trigonometry'                            	4	0	22
 82	2020-03-11	VIDEO     	Using similarity to estimate ratio between side lengths	Description of video 'Using similarity to estimate ratio between side lengths'                      	4	0	22
-86	2020-03-11	VIDEO     	Traingle ratios in right triangles	Description of video 'Traingle ratios in right triangles'                                           	4	0	22
 66	2020-10-15	PAGE      	Rotations intro	Description of page 'Rotations intro'                                                               	3	0	24
 73	2020-10-15	PAGE      	Translating shapes	Description of page 'Translating shapes'                                                            	3	0	24
 7	2019-10-19	VIDEO     	What is a variable?	Description of video 'What is a variable?'                                                          	1	0	26
+98	2020-05-08	VIDEO     	Creating a bar graph	Description of video 'Creating a bar graph'                                                         	6	0	15
+86	2020-03-11	VIDEO     	Traingle ratios in right triangles	Description of video 'Traingle ratios in right triangles'                                           	4	3.0000000000000000	23
+87	2020-03-11	PAGE      	Traingle ratios in right triangles	Description of page 'Traingle ratios in right triangles'                                            	4	4.0000000000000000	23
 57	2019-10-01	QUIZ      	Polynomial special products: perfect square	Description of quiz 'Polynomial special products: perfect square'                                   	2	0	25
 40	2019-10-01	QUIZ      	Add and subtract polynomials	Description of quiz 'Add and subtract polynomials'                                                  	2	0	25
 56	2019-10-01	QUIZ      	Polynomial special products: difference of squares	Description of quiz 'Polynomial special products: difference of squares'                            	2	0	25
@@ -5183,13 +5333,10 @@ COPY public.contents (content_id, date_of_creation, content_type, title, descrip
 75	2020-10-15	PAGE      	Properties of translations	Description of page 'Properties of translations'                                                    	3	0	24
 9	2019-10-19	VIDEO     	Creativity break: Why is creativity important in STEM jobs?	Description of video 'Creativity break: Why is creativity important in STEM jobs?'                  	1	0	26
 59	2020-10-15	VIDEO     	Euclid as father of geometry	Description of video 'Euclid as father of geometry'                                                 	3	0	24
-71	2020-10-15	PAGE      	Determining translations	Description of page 'Determining translations'                                                      	3	0	24
 62	2020-10-15	QUIZ      	Geometric definitions	Description of quiz 'Geometric definitions'                                                         	3	0	24
-64	2020-10-15	VIDEO     	Dilations intro	Description of video 'Dilations intro'                                                              	3	0	24
 67	2020-10-15	VIDEO     	Identifying transformations	Description of video 'Identifying transformations'                                                  	3	0	24
 61	2020-10-15	VIDEO     	Geometric definitions example	Description of video 'Geometric definitions example'                                                	3	0	24
 69	2020-10-15	VIDEO     	Translating points	Description of video 'Translating points'                                                           	3	0	24
-70	2020-10-15	VIDEO     	Determining translations	Description of video 'Determining translations'                                                     	3	0	24
 37	2019-10-01	PAGE      	Adding and subtracting polynomials review	Description of page 'Adding and subtracting polynomials review'                                     	2	0	25
 42	2019-10-01	VIDEO     	Multiplying monomials by polynomials: area model	Description of video 'Multiplying monomials by polynomials: area model'                             	2	0	25
 32	2019-10-01	VIDEO     	Sign of average rate of change of polynomials	Description of video 'Sign of average rate of change of polynomials'                                	2	0	25
@@ -5217,12 +5364,18 @@ COPY public.contents (content_id, date_of_creation, content_type, title, descrip
 4	2019-10-19	VIDEO     	Creativity break: Why is creativity importants in algebra?	Description of video 'Creativity break: Why is creativity importants in algebra?'                   	1	0	26
 27	2019-10-19	VIDEO     	The problem with dividing zero by zero	Description of video 'The problem with dividing zero by zero'                                       	1	0	26
 26	2019-10-19	VIDEO     	Why dividing by zero is undefined?	Description of video 'Why dividing by zero is undefined?'                                           	1	0	26
-11	2019-10-19	PAGE      	Evaluating expressions with one variable	Description of page 'Evaluating expressions with one variable'                                      	1	0	26
 17	2019-10-19	QUIZ      	Evaluating expressions with multiple variables: fractions and decimals	Description of quiz 'Evaluating expressions with multiple variables: fractions and decimals'        	1	0	26
 18	2019-10-19	VIDEO     	Combining like terms with negative coefficients & distribution	Description of video 'Combining like terms with negative coefficients & distribution'               	1	0	26
 15	2019-10-19	PAGE      	Evaluating expressions with two variables: fractions & decimals	Description of page 'Evaluating expressions with two variables: fractions & decimals'               	1	0	26
-2	2019-10-19	VIDEO     	Abstract-ness	Description of video 'Abstract-ness'                                                                	1	2.5000000000000000	29
 19	2019-10-19	VIDEO     	Combining like terms with negative coefficients	Description of video 'Combining like terms with negative coefficients'                              	1	3.0000000000000000	28
+2	2019-10-19	VIDEO     	Abstract-ness	Description of video 'Abstract-ness'                                                                	1	3.3333333333333333	30
+11	2019-10-19	PAGE      	Evaluating expressions with one variable	Description of page 'Evaluating expressions with one variable'                                      	1	0	27
+107	2021-05-15	VIDEO     	Introoduction to economics	Description of video 'Introoduction to economics'                                                   	10	4.0000000000000000	5
+112	2022-08-31	VIDEO     	Sadif Course 1 Video 1	Sadif Course 1 Video 1 Description                                                                  	12	4.0000000000000000	3
+79	2020-03-11	PAGE      	Getting ready for right triangles and trigonometry	Description of page 'Getting ready for right triangles and trigonometry'                            	4	3.0000000000000000	23
+70	2020-10-15	VIDEO     	Determining translations	Description of video 'Determining translations'                                                     	3	2.0000000000000000	25
+71	2020-10-15	PAGE      	Determining translations	Description of page 'Determining translations'                                                      	3	2.0000000000000000	25
+64	2020-10-15	VIDEO     	Dilations intro	Description of video 'Dilations intro'                                                              	3	3.0000000000000000	25
 \.
 
 
@@ -5271,8 +5424,6 @@ COPY public.course_remain_contents (user_id, course_id, complete_count, remain_c
 9	9	0	3
 10	1	0	28
 10	2	0	29
-10	3	0	21
-10	4	0	10
 10	5	0	6
 10	6	0	4
 10	7	0	2
@@ -5367,6 +5518,7 @@ COPY public.course_remain_contents (user_id, course_id, complete_count, remain_c
 22	5	0	6
 22	6	0	4
 22	7	0	2
+10	3	2	19
 22	8	0	3
 22	9	0	3
 22	10	0	3
@@ -5548,7 +5700,10 @@ COPY public.course_remain_contents (user_id, course_id, complete_count, remain_c
 14	9	0	3
 63	12	1	0
 63	13	0	1
-63	1	0	28
+63	1	1	27
+64	10	0	3
+65	12	0	2
+10	4	2	8
 \.
 
 
@@ -5579,18 +5734,19 @@ COPY public.course_tags (course_id, tag) FROM stdin;
 
 COPY public.courses (course_id, title, description, date_of_creation, price, creator_id, rate, enroll_count) FROM stdin;
 11	Course	Course Description                                                                                  	2022-08-25	0	51	0	0
-12	Sadif Course 1	Sadif Course 1 Description                                                                          	2022-08-31	1000	62	3.0000000000000000	1
 13	Sadif Course 2	Sadif Course 2                                                                                      	2022-08-31	1200	62	5.0000000000000000	1
-10	Macroeconomics	Learn macroeconomics                                                                                	2021-05-15	500	60	0	8
 9	Computers and Internet	Learn how the amazing world of internet works                                                       	2021-03-13	1200	59	0	17
 8	Microeconomics	Learn microeconomics                                                                                	2020-11-13	500	58	0	21
 7	Computer Programming	Learn the art of programming                                                                        	2020-10-16	1000	57	0	25
-6	Statistics and Probablity	Learn statistics and probablity                                                                     	2020-05-08	700	56	0	29
 5	Statistics	Learn statistics basics                                                                             	2020-03-12	700	55	0	34
-4	Trigonometry	Master trigonometry                                                                                 	2020-03-11	600	54	0	40
-3	Geometry	Learn geometry having fun                                                                           	2020-10-15	600	53	0	45
-1	Algebra 1	Introduction to algebra                                                                             	2019-10-19	500	51	2.7500000000000000	51
 2	Algebra 2	Some advanced topics on algebra                                                                     	2019-10-01	500	52	0	46
+10	Macroeconomics	Learn macroeconomics                                                                                	2021-05-15	500	60	4.0000000000000000	9
+12	Sadif Course 1	Sadif Course 1 Description                                                                          	2022-08-31	1000	62	4.0000000000000000	2
+6	Statistics and Probablity	Learn statistics and probablity                                                                     	2020-05-08	700	56	0	29
+14	abd	                                                                                                    	2022-08-31	23	61	0	0
+4	Trigonometry	Master trigonometry                                                                                 	2020-03-11	600	54	3.3333333333333333	40
+1	Algebra 1	Introduction to algebra                                                                             	2019-10-19	500	51	3.1666666666666667	51
+3	Geometry	Learn geometry having fun                                                                           	2020-10-15	600	53	2.3333333333333333	45
 \.
 
 
@@ -5917,6 +6073,8 @@ COPY public.enrolled_courses (user_id, course_id, date_of_join) FROM stdin;
 63	12	2022-08-31
 63	13	2022-08-31
 63	1	2022-08-31
+64	10	2022-08-31
+65	12	2022-08-31
 \.
 
 
@@ -5925,10 +6083,13 @@ COPY public.enrolled_courses (user_id, course_id, date_of_join) FROM stdin;
 --
 
 COPY public.forum_answers (answer_id, answerer_id, question_id, answer, date_of_answer, time_of_answer, rate) FROM stdin;
-1	1	1	idk	2022-08-31	07:07:30.591935+06	0
-2	2	2	idk	2022-08-31	07:07:56.919883+06	0
-3	3	1	idk either	2022-08-31	07:08:23.706391+06	0
-4	62	1	ekta answer :(	2022-08-31	08:13:47.246665+06	4.0000000000000000
+2	61	1	i donot know	2022-08-31	15:05:16.61134+06	0
+3	61	7	i donot know	2022-08-31	15:05:34.633563+06	0
+4	61	6	i donot know	2022-08-31	15:05:50.608621+06	0
+5	61	5	i donot know	2022-08-31	15:06:11.298012+06	0
+7	61	4	i donot know	2022-08-31	15:06:49.79686+06	2.0000000000000000
+6	63	3	I dont get it	2022-08-31	15:09:40.950123+06	2.5000000000000000
+1	61	1	it is nice edit	2022-08-31	13:39:24.257325+06	4.3333333333333333
 \.
 
 
@@ -5937,8 +6098,13 @@ COPY public.forum_answers (answer_id, answerer_id, question_id, answer, date_of_
 --
 
 COPY public.forum_questions (question_id, asker_id, title, date_of_ask, rate, time_of_ask) FROM stdin;
-1	61	question 1	2022-08-29	0	05:20:32.154914
-2	61	question 2	2022-08-29	0	05:20:57.433963
+2	10	what is science?	2022-08-31	0	14:59:05.120764
+3	10	Why do we learn database?	2022-08-31	0	14:59:47.702233
+4	10	why do we learn math?	2022-08-31	0	15:01:48.679708
+5	10	How can we measure the addition of two numbers?	2022-08-31	0	15:02:32.768656
+6	10	How will i be a good student?	2022-08-31	0	15:03:08.682664
+7	10	What is sociology?	2022-08-31	0	15:03:39.066487
+1	63	Question 1	2022-08-31	4.0000000000000000	13:16:20.951872
 \.
 
 
@@ -5947,10 +6113,6 @@ COPY public.forum_questions (question_id, asker_id, title, date_of_ask, rate, ti
 --
 
 COPY public.forum_questions_tags (question_id, tag) FROM stdin;
-1	tag 1
-1	tag 2
-2	tag 1
-2	tag 3
 \.
 
 
@@ -5960,6 +6122,15 @@ COPY public.forum_questions_tags (question_id, tag) FROM stdin;
 
 COPY public.query_count (count) FROM stdin;
 0
+\.
+
+
+--
+-- Data for Name: question_rates; Type: TABLE DATA; Schema: public; Owner: epathshala
+--
+
+COPY public.question_rates (question_id, user_id, rate) FROM stdin;
+1	51	4
 \.
 
 
@@ -6125,6 +6296,9 @@ COPY public.student_interests (student_id, interest) FROM stdin;
 14	literature
 63	math
 63	computer
+64	math
+64	computer
+65	computer
 \.
 
 
@@ -6185,6 +6359,8 @@ COPY public.students (user_id, date_of_join, rank_point) FROM stdin;
 50	2021-07-20	0
 61	2022-08-26	0
 63	2022-08-31	0
+64	2022-08-31	0
+65	2022-08-31	0
 \.
 
 
@@ -6217,18 +6393,19 @@ COPY public.teacher_specialities (teacher_id, speciality) FROM stdin;
 --
 
 COPY public.teachers (user_id, date_of_join, credit, rate) FROM stdin;
-61	2022-08-26	0	0
-62	2022-08-30	0	4.0000000000000000
-60	2021-05-15	0	0
 59	2021-03-13	2400	0
 58	2020-11-13	0	0
 57	2020-10-16	0	0
-56	2020-05-08	0	0
 55	2020-03-12	2800	0
-54	2020-03-11	0	0
-51	2019-10-19	1500	2.7500000000000000
-53	2020-10-15	0	0
 52	2019-10-01	0	0
+60	2021-05-15	500	4.0000000000000000
+64	2022-08-31	0	0
+62	2022-08-30	1000	4.5000000000000000
+56	2020-05-08	0	0
+54	2020-03-11	0	3.3333333333333333
+53	2020-10-15	0	2.3333333333333333
+61	2022-08-26	300	0
+51	2019-10-19	1500	3.1666666666666667
 \.
 
 
@@ -6243,7 +6420,6 @@ COPY public.users (user_id, full_name, security_key, date_of_birth, bio, email) 
 7	Allyson Moschetti	12345678                        	1997-12-05	                                                                                                    	allyson3467@gmail.com
 8	Dolores White	12345678                        	1994-09-24	                                                                                                    	dolores2369@gmail.com
 9	Dorothy Alford	12345678                        	1998-01-04	                                                                                                    	dorothy1775@gmail.com
-10	Beth Smith	12345678                        	1997-09-18	                                                                                                    	beth3902@gmail.com
 11	Lila Crawford	12345678                        	1983-10-20	                                                                                                    	lila6053@gmail.com
 12	Devon Steger	12345678                        	1991-06-09	                                                                                                    	devon1321@gmail.com
 13	Al Lynch	12345678                        	1989-07-24	                                                                                                    	al8986@gmail.com
@@ -6300,6 +6476,9 @@ COPY public.users (user_id, full_name, security_key, date_of_birth, bio, email) 
 62	Sadif Ahmed	12345678                        	2000-08-30	Ami onek kharap 🫣                                                                                   	sadif58@gmail.com
 51	Martha Marbley	undefined                       	1986-05-26	I love teaching 🥰                                                                                   	martha4381@gmail.com
 63	Abdullah Al Mohaimin	12345678                        	2000-08-31	I love to watch anime 🥰                                                                             	mohaimin41@gmail.com
+64	Kazi Istiaq Torqiye	12345678                        	2000-08-31	Amar matha kharap                                                                                   	toriq104@gmail.com
+65	Sadat Hossain	12345678                        	2000-08-31	I'm boss                                                                                            	sadat1@email.com
+10	Beth Smith	12345678                        	1997-09-18	                                                                                                    	beth3902@gmail.com
 \.
 
 
@@ -6307,7 +6486,7 @@ COPY public.users (user_id, full_name, security_key, date_of_birth, bio, email) 
 -- Name: content_viewers_content_id_seq; Type: SEQUENCE SET; Schema: public; Owner: epathshala
 --
 
-SELECT pg_catalog.setval('public.content_viewers_content_id_seq', 2497, true);
+SELECT pg_catalog.setval('public.content_viewers_content_id_seq', 2536, true);
 
 
 --
@@ -6431,6 +6610,14 @@ ALTER TABLE ONLY public.forum_questions
 
 
 --
+-- Name: question_rates question_rates_pkey; Type: CONSTRAINT; Schema: public; Owner: epathshala
+--
+
+ALTER TABLE ONLY public.question_rates
+    ADD CONSTRAINT question_rates_pkey PRIMARY KEY (question_id, user_id);
+
+
+--
 -- Name: quiz_grades quiz_id_pkey; Type: CONSTRAINT; Schema: public; Owner: epathshala
 --
 
@@ -6540,6 +6727,13 @@ CREATE TRIGGER courses_rate_trigger AFTER INSERT OR DELETE OR UPDATE OF rate ON 
 --
 
 CREATE TRIGGER enrolled_courses_insert_trigger AFTER INSERT ON public.enrolled_courses FOR EACH ROW EXECUTE FUNCTION public.enrolled_courses_insert_trigger();
+
+
+--
+-- Name: question_rates question_rate_trigger; Type: TRIGGER; Schema: public; Owner: epathshala
+--
+
+CREATE TRIGGER question_rate_trigger AFTER INSERT OR DELETE OR UPDATE OF rate ON public.question_rates FOR EACH ROW EXECUTE FUNCTION public.question_rate_trigger();
 
 
 --
@@ -6699,6 +6893,22 @@ ALTER TABLE ONLY public.forum_questions
 
 ALTER TABLE ONLY public.forum_questions_tags
     ADD CONSTRAINT forum_questions_tags_question_id_fkey FOREIGN KEY (question_id) REFERENCES public.forum_questions(question_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: question_rates question_rates_question_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: epathshala
+--
+
+ALTER TABLE ONLY public.question_rates
+    ADD CONSTRAINT question_rates_question_id_fkey FOREIGN KEY (question_id) REFERENCES public.forum_questions(question_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: question_rates question_rates_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: epathshala
+--
+
+ALTER TABLE ONLY public.question_rates
+    ADD CONSTRAINT question_rates_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --

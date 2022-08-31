@@ -24,7 +24,7 @@ int main()
 
         // std::clog << *httpRequestPtr.get()->jsonObject().get() << std::endl;
 
-        if(httpRequestPtr->getHeader("incoming") == "video-file")
+        if(httpRequestPtr->getHeader("type") == "video-file")
         {
             UploadVideo(httpRequestPtr, response, dbClient, httpAppFramework);
         }
@@ -192,6 +192,34 @@ int main()
             Json::Value &request = *reqJsonPtr.get();
 
             UpdateAnswerRate(request, dbClient);
+        }
+        else if(httpRequestPtr->getHeader("type") == "update-question")
+        {
+            std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
+            Json::Value &request = *reqJsonPtr.get();
+
+            UpdateQuestion(request, httpAppFramework);
+        }
+        else if(httpRequestPtr->getHeader("type") == "delete-question")
+        {
+            std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
+            Json::Value &request = *reqJsonPtr.get();
+
+            DeleteQuestion(request, dbClient, httpAppFramework);
+        }
+        else if(httpRequestPtr->getHeader("type") == "get-individual-question-rate")
+        {
+            std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
+            Json::Value &request = *reqJsonPtr.get();
+
+            GetIndividualQuestionRate(request, response, dbClient);
+        }
+        else if(httpRequestPtr->getHeader("type") == "update-question-rate")
+        {
+            std::shared_ptr<Json::Value> reqJsonPtr = httpRequestPtr->getJsonObject();
+            Json::Value &request = *reqJsonPtr.get();
+
+            UpdateQuestionRate(request, dbClient);
         }
         else
         {

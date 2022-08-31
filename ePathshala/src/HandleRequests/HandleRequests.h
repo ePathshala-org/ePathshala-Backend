@@ -57,3 +57,8 @@
 #include "root/GetIndividualCommentRate.h"
 #include "root/GetIndividualAnswerRate.h"
 #include "root/Update/AnswerRate.h"
+#include "root/Update/Question.h"
+#include "root/Update/QuestionRate.h"
+#include "root/Delete/Question.h"
+#include "root/GetIndividualQuestionRate.h"
+#include "root/GetIndividualAnswerRate.h"
